@@ -29,6 +29,13 @@
       "expo-router",
       "expo-sharing",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "35774888-b08f-4d9e-b3ac-ed22795413e7"
+      }
+    },
+    "owner": "marcoec"
   }
 }
