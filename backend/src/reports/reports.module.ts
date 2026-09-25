@@ -15,6 +15,7 @@ import {
 import { Aviso, AvisoSchema } from './schemas/aviso.schema';
 import { ReportsService } from './reports.service';
 import { ReportsController } from './reports.controller';
+import { ReporteXlsxService } from './excel/reporte-xlsx.service';
 import { OrdersModule } from '../orders/orders.module';
 
 @Module({
@@ -38,7 +39,7 @@ import { OrdersModule } from '../orders/orders.module';
     }),
     OrdersModule,
   ],
-  providers: [ReportsService],
+  providers: [ReportsService, ReporteXlsxService],
   controllers: [ReportsController],
 })
 export class ReportsModule {}

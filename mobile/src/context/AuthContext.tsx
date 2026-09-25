@@ -2,18 +2,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { api, getTokenAsync } from '../services/api';
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'mesero' | 'cocina' | 'delivery';
-};
+import type { User } from '../types';
 
 type AuthContextType = {
   user: User | null;
   isRestoring: boolean;
   login: (email: string, password: string) => Promise<User | null>;
+  updateAvatar: (avatar: string) => Promise<User>;
+  removeAvatar: () => Promise<User>;
   logout: () => void;
 };
 
@@ -46,7 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, password: string): Promise<User | null> {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post<{ access_token: string; user: User }>('/auth/login', {
+        email,
+        password,
+      });
       const { access_token, user: usuarioBackend } = response.data;
 
       await SecureStore.setItemAsync('token', access_token);
@@ -58,13 +57,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function updateAvatar(avatar: string): Promise<User> {
+    const { data } = await api.put<User>(
+      '/auth/me/avatar',
+      { avatar },
+      { timeout: 30000 }
+    );
+    setUser(data);
+    return data;
+  }
+
+  async function removeAvatar(): Promise<User> {
+    const { data } = await api.delete<User>('/auth/me/avatar');
+    setUser(data);
+    return data;
+  }
+
   function logout() {
     setUser(null);
     SecureStore.deleteItemAsync('token');
   }
 
   return (
-    <AuthContext.Provider value={{ user, isRestoring, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, isRestoring, login, updateAvatar, removeAvatar, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

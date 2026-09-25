@@ -65,4 +65,14 @@ export class CuadernoEntrada {
 
 export type CuadernoEntradaDocument = CuadernoEntrada &
   Document & { _id: Types.ObjectId };
-export const CuadernoEntradaSchema = SchemaFactory.createForClass(CuadernoEntrada);
+export const CuadernoEntradaSchema =
+  SchemaFactory.createForClass(CuadernoEntrada);
+
+export type CobroAjeno = {
+  monto: number;
+  metodoPago: 'YAPE' | 'EFECTIVO' | null;
+  clienteNombre: string | null;
+  fechaEntrega: string | null;
+  orderId: string | null;
+  cobradoEn: string | null;
+};

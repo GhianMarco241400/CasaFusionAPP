@@ -5,3 +5,5 @@ coverage/
 .expo/
 .DS_Store
 *.log
+session-*.md
+mobile/builds/

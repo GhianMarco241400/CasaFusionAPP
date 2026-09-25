@@ -9,9 +9,14 @@ import {
   Platform,
   ScrollView,
   BackHandler,
+  ActivityIndicator,
+  Alert,
+  Image,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -233,7 +238,7 @@ export function HeaderActions({
 }: {
   blurTargetRef: RefObject<View | null>;
 }) {
-  const { user, logout } = useAuth();
+  const { user, logout, updateAvatar, removeAvatar } = useAuth();
   const { orders } = useOrders();
   const { t } = useTema();
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -241,18 +246,33 @@ export function HeaderActions({
   const [comandasAbierto, setComandasAbierto] = useState(false);
   const [letrasAbierto, setLetrasAbierto] = useState(false);
   const [temasAbierto, setTemasAbierto] = useState(false);
+  const [avatarCargando, setAvatarCargando] = useState(false);
+  const [fotoOpcionesAbierto, setFotoOpcionesAbierto] = useState(false);
 
   const pedidosActivos = orders.filter(
     (o) => o.status === 'PENDING' || o.status === 'IN_PREPARATION'
   ).length;
 
   function handleOpenMenu() {
+    if (avatarCargando) return;
     hapticImpact();
     setMenuAbierto(true);
   }
 
   function handleCloseMenu() {
     setMenuAbierto(false);
+  }
+
+  function handleFotoOpciones() {
+    if (avatarCargando) return;
+    hapticImpact();
+    setMenuAbierto(false);
+    setFotoOpcionesAbierto(true);
+  }
+
+  function handleCerrarFotoOpciones() {
+    setFotoOpcionesAbierto(false);
+    setMenuAbierto(true);
   }
 
   function handleLogout() {
@@ -286,35 +306,130 @@ export function HeaderActions({
     setTemasAbierto(true);
   }
 
+  async function handleAvatar() {
+    if (avatarCargando) return;
+    setMenuAbierto(false);
+    setFotoOpcionesAbierto(false);
+    setAvatarCargando(true);
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        shape: 'oval',
+        quality: 1,
+      });
+
+      if (result.canceled) return;
+
+      const source = result.assets[0];
+      const lado = Math.min(source.width, source.height);
+      const contexto = ImageManipulator.manipulate(source.uri).crop({
+        originX: Math.max(0, (source.width - lado) / 2),
+        originY: Math.max(0, (source.height - lado) / 2),
+        width: lado,
+        height: lado,
+      });
+      const rendered = await contexto.resize({ width: 256, height: 256 }).renderAsync();
+      const image = await rendered.saveAsync({
+        compress: 0.8,
+        format: SaveFormat.JPEG,
+        base64: true,
+      });
+
+      if (!image.base64) {
+        throw new Error('No se pudo procesar la imagen');
+      }
+
+      await updateAvatar(`data:image/jpeg;base64,${image.base64}`);
+      hapticImpact();
+    } catch {
+      Alert.alert('No se pudo cambiar la foto', 'Intenta seleccionar otra imagen.');
+    } finally {
+      setAvatarCargando(false);
+    }
+  }
+
+  async function handleRemoveAvatar() {
+    if (avatarCargando) return;
+    setMenuAbierto(false);
+    setFotoOpcionesAbierto(false);
+    setAvatarCargando(true);
+
+    try {
+      await removeAvatar();
+      hapticImpact();
+    } catch {
+      Alert.alert('No se pudo quitar la foto', 'Intenta nuevamente.');
+    } finally {
+      setAvatarCargando(false);
+    }
+  }
+
   const nombre = user?.name ?? user?.email ?? 'Usuario';
   const inicial = nombre.charAt(0).toUpperCase();
   const rol = user?.role ?? 'mesero';
 
   const items = [
     ...(user?.role === 'admin'
-      ? [{ key: 'menu', label: 'Gestionar menú del día', onPress: handleGestionMenu, color: t.textPrimary }]
+      ? [
+          {
+            key: 'menu',
+            label: 'Gestionar menú del día',
+            onPress: handleGestionMenu,
+            color: t.textPrimary,
+          },
+        ]
       : []),
     ...(user?.role === 'mesero' || user?.role === 'delivery'
-      ? [{ key: 'comandas', label: 'Comandas', onPress: handleComandas, color: t.textPrimary }]
+      ? [
+          {
+            key: 'comandas',
+            label: 'Comandas',
+            onPress: handleComandas,
+            color: t.textPrimary,
+          },
+        ]
       : []),
     ...(user?.role === 'cocina'
-      ? [{ key: 'letras', label: 'Ajustar letras', onPress: handleLetras, color: t.textPrimary }]
+      ? [
+          {
+            key: 'letras',
+            label: 'Ajustar letras',
+            onPress: handleLetras,
+            color: t.textPrimary,
+          },
+        ]
       : []),
+    {
+      key: 'avatar',
+      label: 'Foto de perfil',
+      onPress: handleFotoOpciones,
+      color: t.textPrimary,
+    },
     { key: 'temas', label: 'Temas', onPress: handleTemas, color: t.textPrimary },
     { key: 'salir', label: 'Cerrar sesión', onPress: handleLogout, color: t.primary },
   ];
 
   useEffect(() => {
-    if (!gestionAbierto && !comandasAbierto && !letrasAbierto && !temasAbierto) return;
+    if (!gestionAbierto && !comandasAbierto && !letrasAbierto && !temasAbierto && !fotoOpcionesAbierto) {
+      return;
+    }
     const subs = BackHandler.addEventListener('hardwareBackPress', () => {
-      setGestionAbierto(false);
-      setComandasAbierto(false);
-      setLetrasAbierto(false);
-      setTemasAbierto(false);
+      if (fotoOpcionesAbierto) {
+        setFotoOpcionesAbierto(false);
+        setMenuAbierto(true);
+      } else {
+        setGestionAbierto(false);
+        setComandasAbierto(false);
+        setLetrasAbierto(false);
+        setTemasAbierto(false);
+      }
       return true;
     });
     return () => subs.remove();
-  }, [gestionAbierto, comandasAbierto, letrasAbierto, temasAbierto]);
+  }, [gestionAbierto, comandasAbierto, letrasAbierto, temasAbierto, fotoOpcionesAbierto]);
 
   return (
     <>
@@ -337,10 +452,11 @@ export function HeaderActions({
         )}
         <ScalePressable
           onPress={handleOpenMenu}
+          disabled={avatarCargando}
           pressedScale={0.9}
           hitSlop={8}
           innerClassName="flex-1 w-full h-full items-center justify-center"
-          className="w-11 h-11 rounded-full"
+          className="w-14 h-14 rounded-full overflow-hidden"
           style={{
             backgroundColor: t.pillBg,
             shadowColor: '#000',
@@ -350,7 +466,17 @@ export function HeaderActions({
             elevation: 4,
           }}
         >
-          <Feather name="user" size={20} color={t.pillText} />
+          {avatarCargando ? (
+            <ActivityIndicator size="small" color={t.pillText} />
+          ) : user?.avatar ? (
+            <Image
+              source={{ uri: user.avatar }}
+              style={{ width: '100%', height: '100%', borderRadius: 999 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Feather name="user" size={24} color={t.pillText} />
+          )}
         </ScalePressable>
       </View>
 
@@ -382,12 +508,20 @@ export function HeaderActions({
           >
             <View className="px-4 pt-4 pb-3 flex-row items-center gap-3">
               <View
-                className="w-11 h-11 rounded-full items-center justify-center"
+                className="w-11 h-11 rounded-full items-center justify-center overflow-hidden"
                 style={{ backgroundColor: t.primary }}
               >
-                <Text className="font-extrabold text-lg" style={{ color: t.onPrimary }}>
-                  {inicial}
-                </Text>
+                {user?.avatar ? (
+                  <Image
+                    source={{ uri: user.avatar }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text className="font-extrabold text-lg" style={{ color: t.onPrimary }}>
+                    {inicial}
+                  </Text>
+                )}
               </View>
               <View className="flex-1">
                 <Text className="font-semibold leading-tight" numberOfLines={1} style={{ color: t.textPrimary }}>
@@ -417,13 +551,99 @@ export function HeaderActions({
                   className="px-4 py-3.5"
                 >
                   <Text className="font-semibold" style={{ color: item.color }}>
-                    {item.key === 'menu' ? '🍽️  ' : item.key === 'comandas' ? '🧾  ' : item.key === 'letras' ? '🔠  ' : item.key === 'temas' ? '🎨  ' : '  '}
                     {item.label}
                   </Text>
                 </ScalePressable>
-                {item.key === 'menu' && <View className="h-px mx-4" style={{ backgroundColor: t.border }} />}
+                {indice < items.length - 1 && (
+                  <View className="h-px mx-4" style={{ backgroundColor: t.border }} />
+                )}
               </Animated.View>
             ))}
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={fotoOpcionesAbierto}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={handleCerrarFotoOpciones}
+      >
+        <Pressable className="flex-1" onPress={handleCerrarFotoOpciones}>
+          <Animated.View
+            entering={FadeIn.duration(180)}
+            className="flex-1"
+            style={{ backgroundColor: alpha(t.overlay, 85) }}
+          />
+          <Animated.View
+            entering={FadeInDown.springify().damping(17).stiffness(180)}
+            className="absolute top-20 right-5 w-64 rounded-2xl overflow-hidden"
+            style={{
+              backgroundColor: t.surfaceElevated,
+              borderColor: t.border,
+              borderWidth: 1,
+              shadowColor: '#000',
+              shadowOpacity: 0.5,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 8 },
+            }}
+          >
+            <View className="px-4 pt-4 pb-3 flex-row items-center justify-between">
+              <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>
+                Foto de perfil
+              </Text>
+              <ScalePressable
+                onPress={handleCerrarFotoOpciones}
+                pressedScale={0.9}
+                hitSlop={8}
+              >
+                <View
+                  className="w-9 h-9 rounded-full items-center justify-center"
+                  style={{ backgroundColor: t.surface }}
+                >
+                  <Feather name="chevron-left" size={18} color={t.textSecondary} />
+                </View>
+              </ScalePressable>
+            </View>
+            <View className="h-px" style={{ backgroundColor: t.border }} />
+            <ScalePressable
+              onPress={handleAvatar}
+              disabled={avatarCargando}
+              pressedScale={0.97}
+              className="px-4 py-3.5"
+              innerClassName="w-full"
+            >
+              <View className="flex-row items-center gap-3">
+                <Feather
+                  name={user?.avatar ? 'edit-2' : 'image'}
+                  size={18}
+                  color={t.textSecondary}
+                />
+                <Text className="font-semibold" style={{ color: t.textPrimary }}>
+                  {user?.avatar ? 'Cambiar foto' : 'Elegir foto'}
+                </Text>
+              </View>
+            </ScalePressable>
+            {user?.avatar && (
+              <>
+                <View className="h-px mx-4" style={{ backgroundColor: t.border }} />
+                <ScalePressable
+                  onPress={handleRemoveAvatar}
+                  disabled={avatarCargando}
+                  pressedScale={0.97}
+                  className="px-4 py-3.5"
+                  innerClassName="w-full"
+                >
+                  <View className="flex-row items-center gap-3">
+                    <Feather name="trash-2" size={18} color={t.primary} />
+                    <Text className="font-semibold" style={{ color: t.primary }}>
+                      Quitar foto
+                    </Text>
+                  </View>
+                </ScalePressable>
+              </>
+            )}
           </Animated.View>
         </Pressable>
       </Modal>

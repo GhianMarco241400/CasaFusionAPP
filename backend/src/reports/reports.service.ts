@@ -7,8 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import ExcelJS from 'exceljs';
-import { Order, OrderDocument, OrderItem, PagoEstado, MetodoPago } from '../orders/schemas/order.schema';
+import {
+  Order,
+  OrderDocument,
+  OrderItem,
+  PagoEstado,
+  MetodoPago,
+} from '../orders/schemas/order.schema';
 import { OrdersGateway } from '../orders/orders.gateway';
 import { Dish, DishDocument } from '../menu/schemas/dish.schema';
 import { Category, CategoryDocument } from '../menu/schemas/category.schema';
@@ -16,31 +21,26 @@ import { Entrada, EntradaDocument } from '../menu/schemas/entrada.schema';
 import {
   DailyReport,
   DailyReportDocument,
-  IngresoManual,
   ItemTotal,
   Sale,
 } from './schemas/daily-report.schema';
 import {
+  CobroAjeno,
   CuadernoEntrada,
   CuadernoEntradaDocument,
 } from './schemas/cuaderno.schema';
 import { Aviso, AvisoDocument } from './schemas/aviso.schema';
+import { ReporteXlsxService } from './excel/reporte-xlsx.service';
+import { totalItem, totalesDe } from './reporte-totales';
 
 const FECHA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-type CobroAjeno = {
-  monto: number;
-  metodoPago: MetodoPago | null;
-  clienteNombre: string | null;
-  fechaEntrega: string | null;
-  orderId: string | null;
-};
 
 @Injectable()
 export class ReportsService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-    @InjectModel(DailyReport.name) private reportModel: Model<DailyReportDocument>,
+    @InjectModel(DailyReport.name)
+    private reportModel: Model<DailyReportDocument>,
     @InjectModel(Dish.name) private dishModel: Model<DishDocument>,
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
     @InjectModel(Entrada.name) private entradaModel: Model<EntradaDocument>,
@@ -48,6 +48,7 @@ export class ReportsService {
     private cuadernoModel: Model<CuadernoEntradaDocument>,
     @InjectModel(Aviso.name) private avisoModel: Model<AvisoDocument>,
     private ordersGateway: OrdersGateway,
+    private reporteXlsx: ReporteXlsxService,
   ) {}
 
   claveHoy(): string {
@@ -74,7 +75,9 @@ export class ReportsService {
     }
 
     if (ordenes.some((o) => o.status !== 'READY')) {
-      throw new ConflictException('Hay comandas aún en preparación o pendientes');
+      throw new ConflictException(
+        'Hay comandas aún en preparación o pendientes',
+      );
     }
 
     for (const orden of ordenes) {
@@ -248,6 +251,7 @@ export class ReportsService {
         clienteNombre: e.clienteNombre ?? null,
         fechaEntrega: e.fechaEntrega,
         orderId: e.orderId ?? null,
+        cobradoEn: e.cobradoEn ?? null,
       }));
     return {
       ...reporte.toObject(),
@@ -345,7 +349,8 @@ export class ReportsService {
 
     const ventas = (reporte.sales ?? [])
       .filter(
-        (venta) => venta.waiterId === userId && venta.pagoEstado !== 'PENDIENTE',
+        (venta) =>
+          venta.waiterId === userId && venta.pagoEstado !== 'PENDIENTE',
       )
       .sort((a, b) => b.completedAt.localeCompare(a.completedAt));
 
@@ -359,340 +364,49 @@ export class ReportsService {
       throw new BadRequestException('Fecha inválida. Usa formato YYYY-MM-DD');
     }
 
-    const [reporte, dishes, categorias, entradas] = await Promise.all([
+    const [reporte, dishes, categorias, entradas, cobros] = await Promise.all([
       this.reportModel.findOne({ date }).exec(),
-      this.dishModel.find({ active: { $ne: false } }).sort({ name: 1 }).exec(),
+      this.dishModel
+        .find({ active: { $ne: false } })
+        .sort({ name: 1 })
+        .exec(),
       this.categoryModel.find({ active: true }).sort({ name: 1 }).exec(),
-      this.entradaModel.find({ active: { $ne: false } }).sort({ name: 1 }).exec(),
+      this.entradaModel
+        .find({ active: { $ne: false } })
+        .sort({ name: 1 })
+        .exec(),
+      this.cuadernoModel.find({ tipo: 'COBRO', cobradoFecha: date }).exec(),
     ]);
 
-    const mapaCategorias = new Map<string, string>(
-      categorias.map((c) => [c._id.toString(), c.name]),
-    );
+    const cobrosAjenos: CobroAjeno[] = cobros
+      .filter((e) => e.fechaEntrega && e.fechaEntrega !== date)
+      .map((e) => ({
+        monto: e.monto,
+        metodoPago: e.cobradoMetodo ?? null,
+        clienteNombre: e.clienteNombre ?? null,
+        fechaEntrega: e.fechaEntrega,
+        orderId: e.orderId ?? null,
+        cobradoEn: e.cobradoEn ?? null,
+      }));
 
-    const workbook = new ExcelJS.Workbook();
-    this.hojaVentas(workbook, date, reporte);
-    this.hojaMenu(workbook, date, dishes, categorias, mapaCategorias, entradas);
+    const buffer = await this.reporteXlsx.generar({
+      date,
+      ventas: reporte?.sales ?? [],
+      ingresosManuales: reporte?.ingresosManuales ?? [],
+      cobrosAjenos,
+      platos: dishes.map((d) => ({
+        name: d.name,
+        price: d.price,
+        categoryId: d.categoryId ? d.categoryId.toString() : null,
+      })),
+      categorias: categorias.map((c) => ({
+        id: c._id.toString(),
+        name: c.name,
+      })),
+      entradas: entradas.map((e) => ({ name: e.name, price: e.price })),
+    });
 
-    const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
     return { buffer, filename: `reporte-${date}.xlsx` };
-  }
-
-  private fechaLegible(date: string): string {
-    const [y, m, d] = date.split('-').map(Number);
-    const fecha = new Date(y, m - 1, d);
-    return fecha.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }
-
-  private hojaVentas(
-    workbook: ExcelJS.Workbook,
-    date: string,
-    reporte: DailyReportDocument | null,
-  ) {
-    const ws = workbook.addWorksheet('Ventas');
-    ws.columns = [
-      { key: 'a', width: 26 },
-      { key: 'b', width: 32 },
-      { key: 'c', width: 16 },
-      { key: 'd', width: 18 },
-    ];
-
-    const filaTitulo = ws.addRow([`REPORTE DE VENTAS · ${this.fechaLegible(date)}`]);
-    filaTitulo.font = { bold: true, color: { argb: 'FFF7F2E9' }, size: 14 };
-    filaTitulo.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4432B' } };
-    ws.mergeCells(`A${filaTitulo.number}:D${filaTitulo.number}`);
-    filaTitulo.height = 26;
-
-    const filaSub = ws.addRow(['CasaFusion · Resumen del día']);
-    filaSub.font = { italic: true, color: { argb: 'FF8C7F6E' } };
-    ws.mergeCells(`A${filaSub.number}:D${filaSub.number}`);
-
-    ws.addRow([]);
-    const cabecera = ws.addRow(['Recaudado', 'Por cobrar', 'Comandas', 'Ticket promedio']);
-    cabecera.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: 'FFF7F2E9' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B2420' } };
-      cell.alignment = { horizontal: 'center' };
-    });
-    const valores = reporte
-      ? ws.addRow([
-          reporte.totalIngresos,
-          reporte.totalPendiente,
-          reporte.numComandas,
-          reporte.ticketPromedio,
-        ])
-      : ws.addRow(['—', '—', '—', '—']);
-    valores.getCell(1).numFmt = 'S/ #,##0.00';
-    valores.getCell(2).numFmt = 'S/ #,##0.00';
-    valores.getCell(4).numFmt = 'S/ #,##0.00';
-    const filaVentas = reporte
-      ? ws.addRow([
-          `${reporte.numSales} ventas · ${reporte.numPendientes} por cobrar`,
-          '',
-          '',
-          '',
-        ])
-      : null;
-    if (filaVentas) {
-      filaVentas.font = { italic: true, color: { argb: 'FF8C7F6E' } };
-    }
-
-    ws.addRow([]);
-    const seccionPlatos = ws.addRow(['PLATOS MÁS VENDIDOS']);
-    seccionPlatos.font = { bold: true, color: { argb: 'FFF7F2E9' } };
-    seccionPlatos.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4D7C4D' } };
-    ws.mergeCells(`A${seccionPlatos.number}:D${seccionPlatos.number}`);
-
-    const cabeceraPlatos = ws.addRow(['#', 'Plato', 'Cantidad', 'Total']);
-    cabeceraPlatos.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: 'FF2B2420' } };
-      cell.border = { bottom: { style: 'thin', color: { argb: 'FFD8CBB8' } } };
-    });
-
-    const items = reporte?.itemsTotales ?? [];
-    if (items.length === 0) {
-      ws.addRow(['', 'Sin ventas este día', '', '']);
-    } else {
-      items.forEach((item, i) => {
-        const fila = ws.addRow([i + 1, item.name, item.quantity, item.total]);
-        fila.getCell(1).alignment = { horizontal: 'center' };
-        fila.getCell(3).alignment = { horizontal: 'center' };
-        fila.getCell(4).numFmt = 'S/ #,##0.00';
-      });
-    }
-
-    ws.addRow([]);
-    const seccionMesas = ws.addRow(['VENTAS POR MESA']);
-    seccionMesas.font = { bold: true, color: { argb: 'FFF7F2E9' } };
-    seccionMesas.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4D7C4D' } };
-    ws.mergeCells(`A${seccionMesas.number}:D${seccionMesas.number}`);
-
-    const cabeceraMesas = ws.addRow(['Mesa', 'Comandas', 'Total', 'Método']);
-    cabeceraMesas.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: 'FF2B2420' } };
-      cell.border = { bottom: { style: 'thin', color: { argb: 'FFD8CBB8' } } };
-    });
-
-    const ventas = reporte?.sales ?? [];
-    if (ventas.length === 0) {
-      ws.addRow(['—', '', '', '']);
-    } else {
-      ventas.forEach((venta) => {
-        const esDelivery = venta.canal === 'delivery';
-        const etiqueta = esDelivery
-          ? `🛵 Delivery${venta.pagoEstado === 'PENDIENTE' ? ' (por cobrar)' : ''}`
-          : venta.tableNumber === 0
-            ? 'Para llevar'
-            : `Mesa ${venta.tableNumber}`;
-        const metodo =
-          venta.pagoEstado === 'PENDIENTE'
-            ? '⏳ fiado'
-            : venta.metodoPago === 'YAPE'
-              ? '📱 Yape'
-              : venta.metodoPago === 'EFECTIVO'
-                ? '💵 Efectivo'
-                : '';
-        const fila = ws.addRow([
-          etiqueta,
-          venta.orders.length,
-          venta.total,
-          metodo,
-        ]);
-        fila.getCell(2).alignment = { horizontal: 'center' };
-        fila.getCell(3).numFmt = 'S/ #,##0.00';
-        fila.getCell(4).alignment = { horizontal: 'center' };
-      });
-    }
-
-    ws.addRow([]);
-    const seccionManuales = ws.addRow(['INGRESOS MANUALES']);
-    seccionManuales.font = { bold: true, color: { argb: 'FFF7F2E9' } };
-    seccionManuales.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE8A33D' },
-    };
-    ws.mergeCells(`A${seccionManuales.number}:D${seccionManuales.number}`);
-
-    const cabeceraManuales = ws.addRow(['Concepto', 'Método', 'Monto', 'Hora']);
-    cabeceraManuales.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: 'FF2B2420' } };
-      cell.border = { bottom: { style: 'thin', color: { argb: 'FFD8CBB8' } } };
-    });
-
-    const manuales = reporte?.ingresosManuales ?? [];
-    if (manuales.length === 0) {
-      ws.addRow(['—', '', '', '']);
-    } else {
-      manuales.forEach((ingreso) => {
-        const filaManual = ws.addRow([
-          ingreso.concepto ?? '',
-          ingreso.metodoPago === 'YAPE' ? '📱 Yape' : '💵 Efectivo',
-          ingreso.monto,
-          new Intl.DateTimeFormat('es-PE', {
-            timeZone: 'America/Lima',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          }).format(new Date(ingreso.registradoEn)),
-        ]);
-        filaManual.getCell(2).alignment = { horizontal: 'center' };
-        filaManual.getCell(3).numFmt = 'S/ #,##0.00';
-        filaManual.getCell(4).alignment = { horizontal: 'center' };
-      });
-    }
-  }
-
-  private hojaMenu(
-    workbook: ExcelJS.Workbook,
-    date: string,
-    dishes: DishDocument[],
-    categorias: CategoryDocument[],
-    mapaCategorias: Map<string, string>,
-    entradas: EntradaDocument[],
-  ) {
-    const ws = workbook.addWorksheet('Menú');
-    ws.columns = [
-      { key: 'tipo', width: 12 },
-      { key: 'nombre', width: 34 },
-      { key: 'categoria', width: 26 },
-      { key: 'precio', width: 14 },
-    ];
-
-    const filaTitulo = ws.addRow([`MENÚ DEL DÍA · ${this.fechaLegible(date)}`]);
-    filaTitulo.font = { bold: true, color: { argb: 'FFF7F2E9' }, size: 14 };
-    filaTitulo.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4432B' } };
-    ws.mergeCells(`A${filaTitulo.number}:D${filaTitulo.number}`);
-    filaTitulo.height = 26;
-
-    const filaSub = ws.addRow(['CasaFusion · Fondos, entradas y extras del día']);
-    filaSub.font = { italic: true, color: { argb: 'FF8C7F6E' } };
-    ws.mergeCells(`A${filaSub.number}:D${filaSub.number}`);
-
-    ws.addRow([]);
-    const cabecera = ws.addRow(['Tipo', 'Nombre', 'Categoría', 'Precio']);
-    cabecera.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: 'FFF7F2E9' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B2420' } };
-      cell.alignment = { horizontal: 'center' };
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FF3A322B' } },
-        left: { style: 'thin', color: { argb: 'FF3A322B' } },
-        bottom: { style: 'thin', color: { argb: 'FF3A322B' } },
-        right: { style: 'thin', color: { argb: 'FF3A322B' } },
-      };
-    });
-
-    const porCategoria = new Map<string, DishDocument[]>();
-    for (const plato of dishes) {
-      const clave = plato.categoryId ? plato.categoryId.toString() : '';
-      const lista = porCategoria.get(clave) ?? [];
-      lista.push(plato);
-      porCategoria.set(clave, lista);
-    }
-
-    const imprimirSeccion = (
-      titulo: string,
-      color: string,
-      tipoPlato: string,
-      filas: (DishDocument | EntradaDocument)[],
-    ) => {
-      if (filas.length === 0) return;
-      const grupo = ws.addRow([`${titulo} (${filas.length})`]);
-      grupo.font = { bold: true, color: { argb: 'FFF7F2E9' } };
-      grupo.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
-      ws.mergeCells(`A${grupo.number}:D${grupo.number}`);
-      grupo.height = 20;
-      filas.forEach((item) => {
-        const esPlato = 'categoryId' in item;
-        const fila = ws.addRow([
-          esPlato ? tipoPlato : 'Entrada',
-          item.name,
-          esPlato
-            ? (mapaCategorias.get((item as DishDocument).categoryId?.toString() ?? '') ?? 'Sin categoría')
-            : 'Acompaña al plato',
-          item.price,
-        ]);
-        fila.getCell(1).alignment = { horizontal: 'center' };
-        fila.getCell(2).border = {
-          top: { style: 'thin', color: { argb: 'FFD8CBB8' } },
-          left: { style: 'thin', color: { argb: 'FFD8CBB8' } },
-          bottom: { style: 'thin', color: { argb: 'FFD8CBB8' } },
-          right: { style: 'thin', color: { argb: 'FFD8CBB8' } },
-        };
-        fila.getCell(4).numFmt = 'S/ #,##0.00';
-        fila.getCell(4).alignment = { horizontal: 'center' };
-      });
-      ws.addRow([]);
-    };
-
-    const fondosId =
-      categorias.find((c) => c.name.trim().toLowerCase() === 'fondos')?._id.toString() ?? '';
-    const extrasId =
-      categorias.find((c) => c.name.trim().toLowerCase() === 'extras')?._id.toString() ?? '';
-
-    const fondos = porCategoria.get(fondosId) ?? [];
-    const extras = porCategoria.get(extrasId) ?? [];
-    porCategoria.delete(fondosId);
-    porCategoria.delete(extrasId);
-
-    imprimirSeccion('FONDOS', 'FF4D7C4D', 'Fondo', fondos);
-    imprimirSeccion('ENTRADAS · acompañan al plato', 'FFE8A33D', 'Entrada', entradas);
-    imprimirSeccion('EXTRAS', 'FF6C4FBF', 'Extra', extras);
-
-    const otros: DishDocument[] = [];
-    for (const categoria of categorias) {
-      const id = categoria._id.toString();
-      const platos = porCategoria.get(id);
-      if (platos && platos.length > 0) {
-        otros.push(...platos);
-        porCategoria.delete(id);
-      }
-    }
-    for (const platos of porCategoria.values()) {
-      otros.push(...platos);
-    }
-    otros.sort((a, b) => a.name.localeCompare(b.name));
-    imprimirSeccion('OTROS PLATOS', 'FF2B2420', 'Plato', otros);
-
-    const total = dishes.length + entradas.length;
-    ws.addRow([]);
-    const filaPie = ws.addRow([`Menú del día · ${total} ${total === 1 ? 'producto' : 'productos'} disponibles`]);
-    filaPie.font = { italic: true, color: { argb: 'FF8C7F6E' } };
-    ws.mergeCells(`A${filaPie.number}:D${filaPie.number}`);
-  }
-
-  private totalesDe(sales: Sale[], ingresosManuales: IngresoManual[] = []) {
-    const numSales = sales.length;
-    const numComandas = sales.reduce((acc, s) => acc + s.orders.length, 0);
-    const ventasConfirmadas = sales
-      .filter((s) => s.pagoEstado !== 'PENDIENTE')
-      .reduce((acc, s) => acc + s.total, 0);
-    const totalManuales = ingresosManuales.reduce((acc, i) => acc + i.monto, 0);
-    const totalIngresos = ventasConfirmadas + totalManuales;
-    const totalPendiente = sales
-      .filter((s) => s.pagoEstado === 'PENDIENTE')
-      .reduce((acc, s) => acc + s.total, 0);
-    const numPendientes = sales.filter(
-      (s) => s.pagoEstado === 'PENDIENTE'
-    ).length;
-    const ticketPromedio =
-      numSales > 0
-        ? Math.round(((ventasConfirmadas + totalPendiente) / numSales) * 100) / 100
-        : 0;
-    return {
-      numSales,
-      numComandas,
-      totalIngresos,
-      totalPendiente,
-      numPendientes,
-      ticketPromedio,
-    };
   }
 
   private async registrarVenta(venta: Sale): Promise<DailyReportDocument> {
@@ -700,7 +414,7 @@ export class ReportsService {
     const existente = await this.reportModel.findOne({ date }).exec();
 
     if (!existente) {
-      const totales = this.totalesDe([venta]);
+      const totales = totalesDe([venta]);
       return this.reportModel.create({
         date,
         sales: [venta],
@@ -710,14 +424,12 @@ export class ReportsService {
         totalPendiente: totales.totalPendiente,
         numPendientes: totales.numPendientes,
         ticketPromedio: totales.ticketPromedio,
-        itemsTotales: this.acumularItems(
-          venta.orders.flatMap((o) => o.items)
-        ),
+        itemsTotales: this.acumularItems(venta.orders.flatMap((o) => o.items)),
       });
     }
 
     existente.sales = [...existente.sales, venta];
-    const totales = this.totalesDe(existente.sales, existente.ingresosManuales);
+    const totales = totalesDe(existente.sales, existente.ingresosManuales);
     existente.numSales = totales.numSales;
     existente.numComandas = totales.numComandas;
     existente.totalIngresos = totales.totalIngresos;
@@ -725,7 +437,7 @@ export class ReportsService {
     existente.numPendientes = totales.numPendientes;
     existente.ticketPromedio = totales.ticketPromedio;
     existente.itemsTotales = this.acumularItems(
-      existente.sales.flatMap((s) => s.orders).flatMap((o) => o.items)
+      existente.sales.flatMap((s) => s.orders).flatMap((o) => o.items),
     );
     await existente.save();
     return existente;
@@ -749,14 +461,14 @@ export class ReportsService {
     cambio: (venta: Sale) => void,
   ): Promise<DailyReportDocument> {
     const venta = reporte.sales.find((s) =>
-      s.orders.some((o) => o.orderId === orderId)
+      s.orders.some((o) => o.orderId === orderId),
     );
     if (!venta) {
       throw new NotFoundException('La venta del pedido ya no existe');
     }
     cambio(venta);
     reporte.markModified('sales');
-    const totales = this.totalesDe(reporte.sales, reporte.ingresosManuales);
+    const totales = totalesDe(reporte.sales, reporte.ingresosManuales);
     reporte.numSales = totales.numSales;
     reporte.numComandas = totales.numComandas;
     reporte.totalIngresos = totales.totalIngresos;
@@ -770,10 +482,12 @@ export class ReportsService {
   async cobrarFiado(orderId: string, metodoPago: MetodoPago) {
     const reporte = await this.reportePorOrderId(orderId);
     const venta = reporte.sales.find((s) =>
-      s.orders.some((o) => o.orderId === orderId)
+      s.orders.some((o) => o.orderId === orderId),
     );
     if (!venta || venta.pagoEstado !== 'PENDIENTE') {
-      throw new ConflictException('Este pedido ya no está pendiente por cobrar');
+      throw new ConflictException(
+        'Este pedido ya no está pendiente por cobrar',
+      );
     }
     const yaCobrado = await this.cuadernoModel
       .exists({ orderId, tipo: 'COBRO' })
@@ -879,17 +593,13 @@ export class ReportsService {
       throw new NotFoundException('Reporte del día no encontrado');
     }
     const manuales = reporte.ingresosManuales ?? [];
-    if (
-      !Number.isInteger(indice) ||
-      indice < 0 ||
-      indice >= manuales.length
-    ) {
+    if (!Number.isInteger(indice) || indice < 0 || indice >= manuales.length) {
       throw new NotFoundException('El ingreso manual ya no existe');
     }
     manuales.splice(indice, 1);
     reporte.ingresosManuales = manuales;
     reporte.markModified('ingresosManuales');
-    const totales = this.totalesDe(reporte.sales, reporte.ingresosManuales);
+    const totales = totalesDe(reporte.sales, reporte.ingresosManuales);
     reporte.numSales = totales.numSales;
     reporte.numComandas = totales.numComandas;
     reporte.totalIngresos = totales.totalIngresos;
@@ -909,7 +619,9 @@ export class ReportsService {
       )
       .exec();
     if (!entrada) {
-      throw new NotFoundException('El fiado manual ya no existe o ya fue cobrado');
+      throw new NotFoundException(
+        'El fiado manual ya no existe o ya fue cobrado',
+      );
     }
     await this.avisoModel
       .updateMany(
@@ -949,7 +661,7 @@ export class ReportsService {
         canal: datos.canal,
       },
     ];
-    const totales = this.totalesDe(reporte.sales, reporte.ingresosManuales);
+    const totales = totalesDe(reporte.sales, reporte.ingresosManuales);
     reporte.numSales = totales.numSales;
     reporte.numComandas = totales.numComandas;
     reporte.totalIngresos = totales.totalIngresos;
@@ -1060,7 +772,7 @@ export class ReportsService {
   async eliminarComanda(orderId: string): Promise<DailyReportDocument> {
     const reporte = await this.reportePorOrderId(orderId);
     const indiceVenta = reporte.sales.findIndex((s) =>
-      s.orders.some((o) => o.orderId === orderId)
+      s.orders.some((o) => o.orderId === orderId),
     );
     if (indiceVenta === -1) {
       throw new NotFoundException('La venta del pedido ya no existe');
@@ -1082,7 +794,7 @@ export class ReportsService {
     }
     reporte.markModified('sales');
 
-    const totales = this.totalesDe(reporte.sales, reporte.ingresosManuales);
+    const totales = totalesDe(reporte.sales, reporte.ingresosManuales);
     reporte.numSales = totales.numSales;
     reporte.numComandas = totales.numComandas;
     reporte.totalIngresos = totales.totalIngresos;
@@ -1090,7 +802,7 @@ export class ReportsService {
     reporte.numPendientes = totales.numPendientes;
     reporte.ticketPromedio = totales.ticketPromedio;
     reporte.itemsTotales = this.acumularItems(
-      reporte.sales.flatMap((s) => s.orders).flatMap((o) => o.items)
+      reporte.sales.flatMap((s) => s.orders).flatMap((o) => o.items),
     );
     await reporte.save();
 
@@ -1112,22 +824,16 @@ export class ReportsService {
     return reporte;
   }
 
-  private totalItem(item: OrderItem): number {
-    return (
-      item.unitPrice * item.quantity +
-      (item.entrada?.price ?? 0) +
-      (item.entradaPersonalizada?.price ?? 0) +
-      (item.paraLlevar ? (item.taperoPrecio ?? 1) * item.quantity : 0)
-    );
-  }
-
   private acumularItems(items: OrderItem[]): ItemTotal[] {
     const mapa = new Map<string, ItemTotal>();
     for (const item of items) {
-      const actual =
-        mapa.get(item.name) ?? { name: item.name, quantity: 0, total: 0 };
+      const actual = mapa.get(item.name) ?? {
+        name: item.name,
+        quantity: 0,
+        total: 0,
+      };
       actual.quantity += item.quantity;
-      actual.total += this.totalItem(item);
+      actual.total += totalItem(item);
       mapa.set(item.name, actual);
     }
     return Array.from(mapa.values()).sort((a, b) => b.total - a.total);

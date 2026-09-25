@@ -14,7 +14,7 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await this.usersService.findByEmail(email);
 
-    if (!user) {
+    if (!user || user.active === false) {
       throw new UnauthorizedException('Correo o contraseña incorrectos');
     }
 
@@ -28,12 +28,7 @@ export class AuthService {
 
     return {
       access_token: this.jwtService.sign(payload),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user: this.usersService.toPublicUser(user),
     };
   }
 }

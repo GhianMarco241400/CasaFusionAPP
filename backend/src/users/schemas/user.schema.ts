@@ -20,6 +20,9 @@ export class User {
 
   @Prop({ default: true })
   active: boolean;
+
+  @Prop({ type: Buffer, default: null })
+  avatar?: Buffer | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
