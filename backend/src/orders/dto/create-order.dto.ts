@@ -94,6 +94,10 @@ export class CreateOrderDto {
   @IsString()
   direccion?: string;
 
+  @IsOptional()
+  @IsBoolean()
+  urgente?: boolean;
+
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

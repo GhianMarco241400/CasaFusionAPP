@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
+import { useTema } from '../context/TemaContext';
+import { alpha } from '../theme/temas';
 
 type Props = { mesa: number; delivery: number };
 
@@ -13,6 +15,7 @@ const SEGMENTOS = [
 type Clave = (typeof SEGMENTOS)[number]['clave'];
 
 export function GraficoDonut({ mesa, delivery }: Props) {
+  const { t, temaId } = useTema();
   const [seleccion, setSeleccion] = useState<Clave | null>(null);
   const valores: Record<Clave, number> = { mesa, delivery };
   const total = mesa + delivery;
@@ -20,7 +23,7 @@ export function GraficoDonut({ mesa, delivery }: Props) {
   if (total <= 0) {
     return (
       <View className="items-center py-8">
-        <Text className="text-[#8C7F6E] text-sm">Sin ventas el día de hoy</Text>
+        <Text className="text-sm" style={{ color: t.textSecondary }}>Sin ventas el día de hoy</Text>
       </View>
     );
   }
@@ -45,7 +48,7 @@ export function GraficoDonut({ mesa, delivery }: Props) {
     <View>
       <View className="items-center mb-4">
         <Svg width={200} height={200} viewBox="0 0 200 200">
-          <Circle cx={100} cy={100} r={R} stroke="#1E1A17" strokeWidth={30} fill="none" />
+          <Circle cx={100} cy={100} r={R} stroke={t.background} strokeWidth={30} fill="none" />
           {acumulados.map((seg) => {
             const ancho = seg.fin - seg.inicio;
             const dash = (ancho / 360) * C;
@@ -69,12 +72,12 @@ export function GraficoDonut({ mesa, delivery }: Props) {
               />
             );
           })}
-          <SvgText x={100} y={92} textAnchor="middle" fill="#F7F2E9" fontSize={24} fontWeight="800">
+          <SvgText x={100} y={92} textAnchor="middle" fill={t.textPrimary} fontSize={24} fontWeight="800">
             {seleccionado
               ? `S/ ${valores[seleccionado.clave].toFixed(0)}`
               : `S/ ${total.toFixed(0)}`}
           </SvgText>
-          <SvgText x={100} y={112} textAnchor="middle" fill="#8C7F6E" fontSize={11}>
+          <SvgText x={100} y={112} textAnchor="middle" fill={t.textSecondary} fontSize={11}>
             {seleccionado ? `${(pct(seleccionado.clave) * 100).toFixed(0)}%` : 'HOY'}
           </SvgText>
         </Svg>
@@ -83,24 +86,40 @@ export function GraficoDonut({ mesa, delivery }: Props) {
       <View className="flex-row gap-3">
         {SEGMENTOS.map((s) => {
           const activo = seleccion === null || seleccion === s.clave;
+          const seleccionado = seleccion === s.clave;
           return (
             <Pressable
               key={s.clave}
               onPress={() => setSeleccion((prev) => (prev === s.clave ? null : s.clave))}
               className={`flex-1 rounded-xl px-3 py-2.5 ${
-                seleccion === s.clave ? 'border border-white/30 bg-[#2B2420]' : 'bg-[#1E1A17]'
+                seleccionado
+                  ? temaId === 'claro'
+                    ? 'border-2 border-[#1E1A17]'
+                    : 'border'
+                  : ''
               }`}
+              style={
+                seleccionado
+                  ? { backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }
+                  : { backgroundColor: t.chip }
+              }
             >
               <View className="flex-row items-center gap-1.5 mb-0.5">
                 <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                <Text className="text-[#F7F2E9] text-xs font-bold" numberOfLines={1}>
+                <Text
+                  className="text-xs font-bold"
+                  numberOfLines={1}
+                  style={{ color: seleccionado ? t.textPrimary : t.chipText }}
+                >
                   {s.label}
                 </Text>
               </View>
-              <Text className="text-[#F7F2E9] font-extrabold text-base">
+              <Text className="font-extrabold text-base" style={{ color: seleccionado ? t.textPrimary : t.chipText }}>
                 {activo ? `S/ ${valores[s.clave].toFixed(2)}` : '—'}
               </Text>
-              <Text className="text-[#8C7F6E] text-xs">{(pct(s.clave) * 100).toFixed(0)}%</Text>
+              <Text className="text-xs" style={{ color: seleccionado ? t.textSecondary : alpha(t.chipText, 70) }}>
+                {(pct(s.clave) * 100).toFixed(0)}%
+              </Text>
             </Pressable>
           );
         })}

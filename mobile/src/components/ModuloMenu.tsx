@@ -26,11 +26,9 @@ import {
   deleteEntrada,
 } from '../services/menu';
 import { Dish, Entrada } from '../types';
+import { useTema } from '../context/TemaContext';
+import { alpha } from '../theme/temas';
 import { ScalePressable } from './ScalePressable';
-
-const COLOR = {
-  placeholder: '#B8AC9B',
-};
 
 function hapticImpact() {
   if (Platform.OS === 'web') return;
@@ -48,6 +46,7 @@ function hapticWarning() {
 }
 
 export function ModuloMenu() {
+  const { t } = useTema();
   const [itemTipo, setItemTipo] = useState<'fondos' | 'entradas' | 'extras' | 'especiales'>('fondos');
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editando, setEditando] = useState<Dish | Entrada | null>(null);
@@ -164,7 +163,7 @@ export function ModuloMenu() {
 
   return (
     <View className="flex-1">
-      <View className="flex-row bg-[#2B2420] rounded-full p-1 mb-4">
+      <View className="flex-row rounded-full p-1 mb-4" style={{ backgroundColor: t.surface }}>
         {(['fondos', 'entradas', 'extras', 'especiales'] as const).map((opcion) => {
           const activa = itemTipo === opcion;
           return (
@@ -174,9 +173,13 @@ export function ModuloMenu() {
                 hapticImpact();
                 setItemTipo(opcion);
               }}
-              className={`flex-1 rounded-full py-2 items-center ${activa ? 'bg-[#6C4FBF]' : ''}`}
+              className="flex-1 rounded-full py-2 items-center"
+              style={activa ? { backgroundColor: t.yape } : undefined}
             >
-              <Text className={`font-bold ${activa ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
+              <Text
+                className="font-bold"
+                style={activa ? { color: t.onPrimary } : { color: t.textSecondary }}
+              >
                 {opcion === 'fondos'
                   ? 'Fondos'
                   : opcion === 'entradas'
@@ -195,7 +198,7 @@ export function ModuloMenu() {
         data={lista}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <Text className="text-[#8C7F6E] text-base mt-10 text-center">
+          <Text className="text-base mt-10 text-center" style={{ color: t.textSecondary }}>
             Sin {itemTipo === 'fondos'
               ? 'fondos'
               : itemTipo === 'entradas'
@@ -214,18 +217,20 @@ export function ModuloMenu() {
             <Animated.View
               entering={FadeInDown.duration(200)}
               exiting={FadeOut.duration(150)}
-              className="bg-[#2B2420] rounded-xl border border-[#3A322B] px-4 py-3 mb-3 flex-row items-center justify-between"
+              className="rounded-xl border px-4 py-3 mb-3 flex-row items-center justify-between"
+              style={{ backgroundColor: t.surface, borderColor: t.border }}
             >
               <ScalePressable onPress={() => abrirEditar(item)} className="flex-1">
-                <Text className="text-[#F7F2E9] font-semibold text-base">{item.name}</Text>
-                <Text className="text-[#8C7F6E] text-sm mt-0.5">{etiqueta}</Text>
+                <Text className="font-semibold text-base" style={{ color: t.textPrimary }}>{item.name}</Text>
+                <Text className="text-sm mt-0.5" style={{ color: t.textSecondary }}>{etiqueta}</Text>
               </ScalePressable>
               <Pressable
                 onPress={() => pedirBorrar(item)}
                 hitSlop={8}
-                className="ml-4 w-9 h-9 rounded-full bg-[#1E1A17] items-center justify-center"
+                className="ml-4 w-9 h-9 rounded-full items-center justify-center"
+                style={{ backgroundColor: t.chip }}
               >
-                <Text className="text-[#D4432B] font-bold">✕</Text>
+                <Text className="font-bold" style={{ color: t.primary }}>✕</Text>
               </Pressable>
             </Animated.View>
           );
@@ -235,9 +240,10 @@ export function ModuloMenu() {
       <View className="pt-3 pb-5">
         <ScalePressable
           onPress={abrirNuevo}
-          className="bg-[#D4432B] rounded-full py-4 items-center"
+          className="rounded-full py-4 items-center"
+          style={{ backgroundColor: t.primary }}
         >
-          <Text className="text-[#F7F2E9] font-bold text-base">
+          <Text className="font-bold text-base" style={{ color: t.onPrimary }}>
             {itemTipo === 'entradas'
               ? '+ Agregar entrada'
               : itemTipo === 'extras'
@@ -254,14 +260,15 @@ export function ModuloMenu() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           className="flex-1 justify-end"
         >
-          <Pressable className="flex-1 bg-black/50" onPress={() => setModalAbierto(false)}>
+          <Pressable className="flex-1" style={{ backgroundColor: alpha(t.overlay, 50) }} onPress={() => setModalAbierto(false)}>
             <Animated.View entering={FadeIn.duration(200)} className="flex-1" />
           </Pressable>
           <Animated.View
             entering={FadeInDown.duration(250)}
-            className="bg-[#2B2420] rounded-t-3xl border border-[#3A322B] px-6 pt-6 pb-8"
+            className="rounded-t-3xl border px-6 pt-6 pb-8"
+            style={{ backgroundColor: t.surfaceElevated, borderColor: t.border }}
           >
-            <Text className="text-[#F7F2E9] text-lg font-bold mb-4">
+            <Text className="text-lg font-bold mb-4" style={{ color: t.textPrimary }}>
               {editando
                 ? 'Editar'
                 : itemTipo === 'entradas'
@@ -273,9 +280,10 @@ export function ModuloMenu() {
                       : 'Nuevo fondo'}
             </Text>
 
-            <Text className="text-[#8C7F6E] text-sm mb-1">Nombre</Text>
+            <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Nombre</Text>
             <TextInput
-              className="bg-[#1E1A17] rounded-lg text-[#F7F2E9] text-base px-4 py-3 mb-4"
+              className="rounded-lg text-base px-4 py-3 mb-4"
+              style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
               placeholder={
                 itemTipo === 'entradas'
                   ? 'Ej. Papas fritas'
@@ -285,26 +293,27 @@ export function ModuloMenu() {
                       ? 'Ej. Seco de cabrito'
                       : 'Ej. Lomo Saltado'
               }
-              placeholderTextColor={COLOR.placeholder}
+              placeholderTextColor={t.placeholder}
               value={nombre}
               onChangeText={setNombre}
             />
 
             {esDish ? (
               <>
-                <Text className="text-[#8C7F6E] text-sm mb-1">Precio (S/)</Text>
+                <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Precio (S/)</Text>
                 <TextInput
-                  className="bg-[#1E1A17] rounded-lg text-[#F7F2E9] text-base px-4 py-3 mb-4"
+                  className="rounded-lg text-base px-4 py-3 mb-4"
+                  style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
                   placeholder="0.00"
-                  placeholderTextColor={COLOR.placeholder}
+                  placeholderTextColor={t.placeholder}
                   keyboardType="decimal-pad"
                   value={precio}
                   onChangeText={setPrecio}
                 />
               </>
             ) : (
-              <View className="bg-[#1E1A17] rounded-lg px-4 py-3 mb-4">
-                <Text className="text-[#8C7F6E] text-sm">
+              <View className="rounded-lg px-4 py-3 mb-4" style={{ backgroundColor: t.inputBg }}>
+                <Text className="text-sm" style={{ color: t.textSecondary }}>
                   Incluida con el plato, sin costo extra
                 </Text>
               </View>
@@ -312,11 +321,12 @@ export function ModuloMenu() {
 
             {esDish && (
               <>
-                <Text className="text-[#8C7F6E] text-sm mb-1">Imagen (URL) — opcional</Text>
+                <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Imagen (URL) — opcional</Text>
                 <TextInput
-                  className="bg-[#1E1A17] rounded-lg text-[#F7F2E9] text-base px-4 py-3 mb-2"
+                  className="rounded-lg text-base px-4 py-3 mb-2"
+                  style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
                   placeholder="https://..."
-                  placeholderTextColor={COLOR.placeholder}
+                  placeholderTextColor={t.placeholder}
                   value={imagen}
                   onChangeText={setImagen}
                   autoCapitalize="none"
@@ -326,7 +336,8 @@ export function ModuloMenu() {
                   <View className="mb-4">
                     <Image
                       source={{ uri: imagen.trim() }}
-                      className="w-24 h-24 rounded-xl bg-[#1E1A17]"
+                      className="w-24 h-24 rounded-xl"
+                      style={{ backgroundColor: t.chip }}
                       resizeMode="cover"
                     />
                   </View>
@@ -335,32 +346,34 @@ export function ModuloMenu() {
             )}
 
             {errorForm !== '' && (
-              <Text className="text-[#D4432B] text-sm mb-3">{errorForm}</Text>
+              <Text className="text-sm mb-3" style={{ color: t.primary }}>{errorForm}</Text>
             )}
 
-            <ScalePressable onPress={guardar} className="bg-[#D4432B] rounded-full py-4 items-center">
-              <Text className="text-[#F7F2E9] font-bold text-base">{editando ? 'Guardar cambios' : 'Agregar'}</Text>
+            <ScalePressable onPress={guardar} className="rounded-full py-4 items-center" style={{ backgroundColor: t.primary }}>
+              <Text className="font-bold text-base" style={{ color: t.onPrimary }}>{editando ? 'Guardar cambios' : 'Agregar'}</Text>
             </ScalePressable>
           </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={aBorrar !== null} transparent animationType="none" onRequestClose={() => setABorrar(null)}>
-        <View className="flex-1 items-center justify-center px-8 bg-black/50">
+        <View className="flex-1 items-center justify-center px-8" style={{ backgroundColor: alpha(t.overlay, 50) }}>
           <Animated.View
             entering={FadeInDown.duration(200)}
-            className="bg-[#2B2420] rounded-2xl border border-[#3A322B] p-6 w-full max-w-sm"
+            className="rounded-2xl border p-6 w-full max-w-sm"
+            style={{ backgroundColor: t.surfaceElevated, borderColor: t.border }}
           >
-            <Text className="text-[#F7F2E9] font-bold text-lg mb-2">Eliminar {aBorrar?.name ?? ''}?</Text>
-            <Text className="text-[#8C7F6E] text-sm mb-5">
+            <Text className="font-bold text-lg mb-2" style={{ color: t.textPrimary }}>Eliminar {aBorrar?.name ?? ''}?</Text>
+            <Text className="text-sm mb-5" style={{ color: t.textSecondary }}>
               Se desactivará y dejará de aparecer en el menú. Podrás regenerarlo después.
             </Text>
             <View className="flex-row gap-3">
               <ScalePressable
                 onPress={() => setABorrar(null)}
-                className="flex-1 bg-[#1E1A17] rounded-full py-3 items-center"
+                className="flex-1 rounded-full py-3 items-center"
+                style={{ backgroundColor: t.chip }}
               >
-                <Text className="text-[#8C7F6E] font-semibold">Cancelar</Text>
+                <Text className="font-semibold" style={{ color: t.textSecondary }}>Cancelar</Text>
               </ScalePressable>
               <ScalePressable
                 onPress={() => {
@@ -368,9 +381,10 @@ export function ModuloMenu() {
                     mutacionBorrar.mutate({ tipo: itemTipo === 'entradas' ? 'entradas' : itemTipo, id: aBorrar.id });
                   }
                 }}
-                className="flex-1 bg-[#D4432B] rounded-full py-3 items-center"
+                className="flex-1 rounded-full py-3 items-center"
+                style={{ backgroundColor: t.primary }}
               >
-                <Text className="text-[#F7F2E9] font-semibold">Eliminar</Text>
+                <Text className="font-semibold" style={{ color: t.onPrimary }}>Eliminar</Text>
               </ScalePressable>
             </View>
           </Animated.View>

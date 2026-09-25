@@ -31,6 +31,8 @@ import { PlatoModal } from '../../src/components/PlatoModal';
 import { ScalePressable } from '../../src/components/ScalePressable';
 import { useAuth } from '../../src/context/AuthContext';
 import { useOrders } from '../../src/context/OrdersContext';
+import { useTema } from '../../src/context/TemaContext';
+import { alpha } from '../../src/theme/temas';
 import { Plus, Search, Star, X } from 'lucide-react-native';
 
 function hapticImpact(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) {
@@ -45,6 +47,7 @@ function hapticSuccess() {
 
 function DishSkeleton() {
   const opacity = useSharedValue(1);
+  const { t } = useTema();
 
   useEffect(() => {
     opacity.value = withRepeat(withTiming(0.35, { duration: 700 }), -1, true);
@@ -54,17 +57,21 @@ function DishSkeleton() {
 
   return (
     <Animated.View
-      style={animatedStyle}
-      className="w-36 rounded-xl px-4 py-3 bg-[#332B25]"
+      style={[
+        animatedStyle,
+        { backgroundColor: t.border, borderColor: t.border },
+      ]}
+      className="w-36 rounded-xl px-4 py-3 border"
     >
-      <View className="h-3.5 rounded-full bg-[#3A322B]" />
-      <View className="h-3 rounded-full bg-[#3A322B] w-3/5 mt-2" />
-      <View className="h-5 w-16 rounded-full bg-[#3A322B] mt-3" />
+      <View className="h-3.5 rounded-full" style={{ backgroundColor: t.border }} />
+      <View className="h-3 rounded-full w-3/5 mt-2" style={{ backgroundColor: t.border }} />
+      <View className="h-5 w-16 rounded-full mt-3" style={{ backgroundColor: t.border }} />
     </Animated.View>
   );
 }
 
 export default function DeliveryNuevoScreen() {
+  const { t, temaId } = useTema();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
   const [comanda, setComanda] = useState<OrderItem[]>([]);
   const [clienteNombre, setClienteNombre] = useState('');
@@ -277,29 +284,36 @@ export default function DeliveryNuevoScreen() {
       <ScalePressable onPress={abrirPlatoNuevo} pressedScale={0.95}>
         <View
           className={`w-36 rounded-xl px-4 py-3 border-2 min-h-[104px] ${
-            enComandaCustom
-              ? 'bg-[#6C4FBF] border-[#6C4FBF]'
-              : 'bg-[#EAE2F8] border-dashed border-[#6C4FBF]'
+            enComandaCustom ? '' : 'border-dashed'
           }`}
+          style={
+            enComandaCustom
+              ? { backgroundColor: t.yape, borderColor: t.yape }
+              : { backgroundColor: t.extrasSheet, borderColor: t.yape }
+          }
         >
           <View className="flex-row items-start">
             <View className="flex-1 pr-1">
-              <Text className={`text-sm font-bold ${enComandaCustom ? 'text-[#F7F2E9]' : 'text-[#6C4FBF]'}`}>
+              <Text
+                className="text-sm font-bold"
+                style={{ color: enComandaCustom ? t.onPrimary : t.yape }}
+              >
                 ✚ Personalizado
               </Text>
-              <Text className={`text-xs mt-1 ${enComandaCustom ? 'text-[#F7F2E9]/80' : 'text-[#8C7F6E]'}`}>
+              <Text
+                className="text-xs mt-1"
+                style={{ color: enComandaCustom ? alpha(t.onPrimary, 80) : t.textSecondary }}
+              >
                 Fondo, entrada y precio
               </Text>
             </View>
             <View
-              className={`w-6 h-6 rounded-full items-center justify-center ${
-                enComandaCustom ? 'bg-[#F7F2E9]' : 'bg-[#6C4FBF]'
-              }`}
+              className="w-6 h-6 rounded-full items-center justify-center"
+              style={{ backgroundColor: enComandaCustom ? t.onPrimary : t.yape }}
             >
               <Text
-                className={`text-sm font-extrabold leading-none ${
-                  enComandaCustom ? 'text-[#6C4FBF]' : 'text-[#F7F2E9]'
-                }`}
+                className="text-sm font-extrabold leading-none"
+                style={{ color: enComandaCustom ? t.yape : t.onPrimary }}
               >
                 {enComandaCustom ? '✓' : '+'}
               </Text>
@@ -312,7 +326,8 @@ export default function DeliveryNuevoScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-[#1E1A17] px-6 pt-14"
+      className="flex-1 px-6 pt-14"
+      style={{ backgroundColor: t.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View className="flex-row items-center mb-4">
@@ -324,13 +339,18 @@ export default function DeliveryNuevoScreen() {
           disabled={enviando}
           className="mr-3"
         >
-          <View className="w-11 h-11 rounded-full bg-[#2B2420] border border-[#3A322B] items-center justify-center">
-            <Text className="text-[#F7F2E9] text-lg font-bold leading-none">←</Text>
+          <View
+            className={`w-11 h-11 rounded-full items-center justify-center ${
+              temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+            }`}
+            style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+          >
+            <Text className="text-lg font-bold leading-none" style={{ color: t.textPrimary }}>←</Text>
           </View>
         </ScalePressable>
         <View className="flex-1">
-          <Text className="text-[#F7F2E9] text-2xl font-extrabold">🛵 Delivery</Text>
-          <Text className="text-[#8C7F6E] text-sm">
+          <Text className="text-2xl font-extrabold" style={{ color: t.textPrimary }}>🛵 Delivery</Text>
+          <Text className="text-sm" style={{ color: t.textSecondary }}>
             {edit
               ? 'Editando pedido del cliente'
               : comanda.length === 0
@@ -340,28 +360,34 @@ export default function DeliveryNuevoScreen() {
         </View>
       </View>
 
-      <View className="rounded-2xl bg-[#2B2420] border border-[#3A322B] p-4 mb-4">
-        <Text className="text-[#F7F2E9] text-sm font-bold mb-2.5">Datos del cliente</Text>
+      <View
+        className={`rounded-2xl p-4 mb-4 ${temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'}`}
+        style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+      >
+        <Text className="text-sm font-bold mb-2.5" style={{ color: t.textPrimary }}>Datos del cliente</Text>
         <TextInput
-          className="bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3 mb-2.5"
+          className="rounded-xl text-base px-4 py-3 mb-2.5"
+          style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
           placeholder="Nombre *"
-          placeholderTextColor="#B8AC9B"
+          placeholderTextColor={t.placeholder}
           value={clienteNombre}
           onChangeText={setClienteNombre}
         />
         <View className="flex-row gap-2.5">
           <TextInput
-            className="flex-1 bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3"
+            className="flex-1 rounded-xl text-base px-4 py-3"
+            style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
             placeholder="Teléfono"
-            placeholderTextColor="#B8AC9B"
+            placeholderTextColor={t.placeholder}
             keyboardType="phone-pad"
             value={telefono}
             onChangeText={setTelefono}
           />
           <TextInput
-            className="flex-[1.6] bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3"
+            className="flex-[1.6] rounded-xl text-base px-4 py-3"
+            style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
             placeholder="Dirección"
-            placeholderTextColor="#B8AC9B"
+            placeholderTextColor={t.placeholder}
             value={direccion}
             onChangeText={setDireccion}
           />
@@ -369,10 +395,13 @@ export default function DeliveryNuevoScreen() {
       </View>
 
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-[#F7F2E9] text-base font-semibold">Menú</Text>
+        <Text className="text-base font-semibold" style={{ color: t.textPrimary }}>Menú</Text>
         {!isLoading && !error && dishes.length > 0 && (
-          <View className="bg-[#2B2420] border border-[#3A322B] rounded-full px-3 py-1">
-            <Text className="text-[#8C7F6E] text-xs font-semibold">{dishes.length} disponibles</Text>
+          <View
+            className={`${temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'} rounded-full px-3 py-1`}
+            style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+          >
+            <Text className="text-xs font-semibold" style={{ color: t.textSecondary }}>{dishes.length} disponibles</Text>
           </View>
         )}
       </View>
@@ -386,11 +415,11 @@ export default function DeliveryNuevoScreen() {
       )}
 
       {error && (
-        <Animated.View entering={FadeInDown.duration(200)} className="rounded-xl bg-[#2B2420] p-4 mb-4">
-          <Text className="text-[#D4432B] mb-2">No se pudo cargar el menú</Text>
+        <Animated.View entering={FadeInDown.duration(200)} className="rounded-xl p-4 mb-4" style={{ backgroundColor: t.surface }}>
+          <Text className="mb-2" style={{ color: t.primary }}>No se pudo cargar el menú</Text>
           <ScalePressable onPress={() => refetch()}>
-            <View className="bg-[#D4432B] rounded-lg py-2 px-4 self-start">
-              <Text className="text-[#F7F2E9] font-bold text-sm">Reintentar</Text>
+            <View className="rounded-lg py-2 px-4 self-start" style={{ backgroundColor: t.primary }}>
+              <Text className="font-bold text-sm" style={{ color: t.onPrimary }}>Reintentar</Text>
             </View>
           </ScalePressable>
         </Animated.View>
@@ -412,36 +441,41 @@ export default function DeliveryNuevoScreen() {
                 <ScalePressable onPress={() => handleSelectPlato(item)} pressedScale={0.95}>
                   <Animated.View
                     layout={LinearTransition.springify().damping(18)}
-                    className={`w-36 rounded-xl px-4 py-3 border-2 min-h-[104px] ${
+                    className="w-36 rounded-xl px-4 py-3 border-2 min-h-[104px]"
+                    style={
                       yaEnComanda
-                        ? 'bg-[#D4432B] border-[#D4432B]'
-                        : 'bg-[#F7F2E9] border-[#F7F2E9]'
-                    }`}
+                        ? { backgroundColor: t.primary, borderColor: t.primary }
+                        : { backgroundColor: t.pillBg, borderColor: temaId === 'claro' ? '#1E1A17' : '#E9E0D2' }
+                    }
                   >
                     <Text
-                      className={`font-semibold ${yaEnComanda ? 'text-[#F7F2E9]' : 'text-[#2B2420]'}`}
+                      className="font-semibold"
+                      style={{ color: yaEnComanda ? t.onPrimary : t.pillText }}
                       numberOfLines={2}
                     >
                       {item.name}
                     </Text>
                     <View
-                      className={`flex-row items-center justify-between mt-2.5 rounded-full py-1 px-2 ${
-                        yaEnComanda ? 'bg-[#F7F2E9]/20' : 'bg-[#1E1A17]/10'
-                      }`}
+                      className="flex-row items-center justify-between mt-2.5 rounded-full py-1 px-2"
+                      style={{
+                        backgroundColor: yaEnComanda
+                          ? alpha(t.onPrimary, 20)
+                          : alpha(t.chip, 7),
+                      }}
                     >
-                      <Text className={yaEnComanda ? 'text-[#F7F2E9] text-sm' : 'text-[#8C7F6E] text-sm'}>
+                      <Text className="text-sm" style={{ color: yaEnComanda ? t.onPrimary : t.textSecondary }}>
                         S/ {item.price}
                       </Text>
                       <Animated.View entering={ZoomIn.duration(150)}>
                         <View
-                          className={`w-6 h-6 rounded-full items-center justify-center ${
-                            yaEnComanda ? 'bg-[#F7F2E9]' : 'bg-[#1E1A17]/20'
-                          }`}
+                          className="w-6 h-6 rounded-full items-center justify-center"
+                          style={{
+                            backgroundColor: yaEnComanda ? t.onPrimary : alpha(t.chip, 20),
+                          }}
                         >
                           <Text
-                            className={`text-center font-extrabold text-sm leading-none ${
-                              yaEnComanda ? 'text-[#D4432B]' : 'text-[#2B2420]'
-                            }`}
+                            className="text-center font-extrabold text-sm leading-none"
+                            style={{ color: yaEnComanda ? t.primary : t.pillText }}
                           >
                             {yaEnComanda ? '✓' : '+'}
                           </Text>
@@ -465,16 +499,19 @@ export default function DeliveryNuevoScreen() {
           pressedScale={0.97}
           className="mt-2 mb-0"
         >
-          <View className="bg-[#E8A33D] rounded-2xl py-3.5 px-4 flex-row items-center justify-between">
+          <View className="rounded-2xl py-3.5 px-4 flex-row items-center justify-between" style={{ backgroundColor: t.accent }}>
             <View className="flex-row items-center gap-2.5">
-              <View className="w-8 h-8 rounded-full bg-[#2B2420]/15 items-center justify-center">
-                <Star size={18} color="#2B2420" strokeWidth={2.5} fill="#2B2420" />
+              <View
+                className="w-8 h-8 rounded-full items-center justify-center"
+                style={{ backgroundColor: alpha(t.pillText, 15) }}
+              >
+                <Star size={18} color={t.pillText} strokeWidth={2.5} fill={t.pillText} />
               </View>
-              <Text className="text-[#2B2420] font-extrabold text-base">Especial</Text>
-              <Text className="text-[#2B2420]/60 text-xs">{especiales.length} disponibles</Text>
+              <Text className="font-extrabold text-base" style={{ color: t.pillText }}>Especial</Text>
+              <Text className="text-xs" style={{ color: alpha(t.pillText, 60) }}>{especiales.length} disponibles</Text>
             </View>
-            <View className="bg-[#2B2420]/15 rounded-full px-3 py-1 flex-row items-center gap-1.5">
-              <Text className="text-[#2B2420] text-xs font-bold">
+            <View className="rounded-full px-3 py-1 flex-row items-center gap-1.5" style={{ backgroundColor: alpha(t.pillText, 15) }}>
+              <Text className="text-xs font-bold" style={{ color: t.pillText }}>
                 {cantEspeciales > 0
                   ? `${cantEspeciales} en pedido`
                   : especialesAbierto
@@ -502,36 +539,41 @@ export default function DeliveryNuevoScreen() {
                 <ScalePressable onPress={() => handleSelectPlato(item)} pressedScale={0.95}>
                   <Animated.View
                     layout={LinearTransition.springify().damping(18)}
-                    className={`w-36 rounded-xl px-4 py-3 border-2 min-h-[104px] ${
+                    className="w-36 rounded-xl px-4 py-3 border-2 min-h-[104px]"
+                    style={
                       yaEnComanda
-                        ? 'bg-[#D4432B] border-[#D4432B]'
-                        : 'bg-[#FBF1DF] border-[#E8A33D]/60'
-                    }`}
+                        ? { backgroundColor: t.primary, borderColor: t.primary }
+                        : { backgroundColor: '#FBF1DF', borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.accent, 60) }
+                    }
                   >
                     <Text
-                      className={`font-semibold ${yaEnComanda ? 'text-[#F7F2E9]' : 'text-[#2B2420]'}`}
+                      className="font-semibold"
+                      style={{ color: yaEnComanda ? t.onPrimary : t.pillText }}
                       numberOfLines={2}
                     >
                       {item.name}
                     </Text>
                     <View
-                      className={`flex-row items-center justify-between mt-2.5 rounded-full py-1 px-2 ${
-                        yaEnComanda ? 'bg-[#F7F2E9]/20' : 'bg-[#E8A33D]/20'
-                      }`}
+                      className="flex-row items-center justify-between mt-2.5 rounded-full py-1 px-2"
+                      style={{
+                        backgroundColor: yaEnComanda
+                          ? alpha(t.onPrimary, 20)
+                          : alpha(t.accent, 20),
+                      }}
                     >
-                      <Text className={yaEnComanda ? 'text-[#F7F2E9] text-sm' : 'text-[#2B2420] text-sm'}>
+                      <Text className="text-sm" style={{ color: yaEnComanda ? t.onPrimary : t.pillText }}>
                         S/ {item.price}
                       </Text>
                       <Animated.View entering={ZoomIn.duration(150)}>
                         <View
-                          className={`w-6 h-6 rounded-full items-center justify-center ${
-                            yaEnComanda ? 'bg-[#F7F2E9]' : 'bg-[#E8A33D]'
-                          }`}
+                          className="w-6 h-6 rounded-full items-center justify-center"
+                          style={{
+                            backgroundColor: yaEnComanda ? t.onPrimary : t.accent,
+                          }}
                         >
                           <Text
-                            className={`text-center font-extrabold text-sm leading-none ${
-                              yaEnComanda ? 'text-[#D4432B]' : 'text-[#2B2420]'
-                            }`}
+                            className="text-center font-extrabold text-sm leading-none"
+                            style={{ color: yaEnComanda ? t.primary : t.pillText }}
                           >
                             {yaEnComanda ? '✓' : '+'}
                           </Text>
@@ -556,16 +598,19 @@ export default function DeliveryNuevoScreen() {
           pressedScale={0.97}
           className="mt-2 mb-0"
         >
-          <View className="bg-[#6C4FBF] rounded-2xl py-3.5 px-4 flex-row items-center justify-between">
+          <View className="rounded-2xl py-3.5 px-4 flex-row items-center justify-between" style={{ backgroundColor: t.yape }}>
             <View className="flex-row items-center gap-2.5">
-              <View className="w-8 h-8 rounded-full bg-[#F7F2E9]/20 items-center justify-center">
-                <Plus size={18} color="#F7F2E9" strokeWidth={2.5} />
+              <View
+                className="w-8 h-8 rounded-full items-center justify-center"
+                style={{ backgroundColor: alpha(t.onPrimary, 20) }}
+              >
+                <Plus size={18} color={t.onPrimary} strokeWidth={2.5} />
               </View>
-              <Text className="text-[#F7F2E9] font-extrabold text-base">Extras</Text>
-              <Text className="text-[#F7F2E9]/60 text-xs">{extras.length} disponibles</Text>
+              <Text className="font-extrabold text-base" style={{ color: t.onPrimary }}>Extras</Text>
+              <Text className="text-xs" style={{ color: alpha(t.onPrimary, 60) }}>{extras.length} disponibles</Text>
             </View>
-            <View className="bg-[#F7F2E9]/20 rounded-full px-3 py-1 flex-row items-center gap-1.5">
-              <Text className="text-[#F7F2E9] text-xs font-bold">
+            <View className="rounded-full px-3 py-1 flex-row items-center gap-1.5" style={{ backgroundColor: alpha(t.onPrimary, 20) }}>
+              <Text className="text-xs font-bold" style={{ color: t.onPrimary }}>
                 {cantExtras > 0 ? `${cantExtras} en comanda` : 'Ver'}
               </Text>
             </View>
@@ -574,14 +619,18 @@ export default function DeliveryNuevoScreen() {
       )}
 
       <View className="flex-row items-center justify-between mt-3 mb-2">
-        <Text className="text-[#F7F2E9] text-base font-semibold">Comanda</Text>
+        <Text className="text-base font-semibold" style={{ color: t.textPrimary }}>Comanda</Text>
         {comanda.length > 0 && (
           <Animated.View
             key={`${total.toFixed(2)}`}
             entering={ZoomIn.duration(200)}
-            className="bg-[#D4432B]/15 rounded-full px-3 py-1"
+            className="border rounded-full px-3 py-1"
+            style={{
+              backgroundColor: alpha(t.primary, 15),
+              borderColor: alpha(t.primary, 20),
+            }}
           >
-            <Text className="text-[#D4432B] text-xs font-bold">S/ {total.toFixed(2)}</Text>
+            <Text className="text-xs font-bold" style={{ color: t.primary }}>S/ {total.toFixed(2)}</Text>
           </Animated.View>
         )}
       </View>
@@ -590,13 +639,19 @@ export default function DeliveryNuevoScreen() {
         {comanda.length === 0 ? (
           <Animated.View
             entering={FadeInDown.duration(250)}
-            className="border-2 border-dashed border-[#3A322B] rounded-3xl px-5 py-7 items-center"
+            className="border-2 border-dashed rounded-3xl px-5 py-7 items-center"
+            style={{ borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
           >
-            <View className="w-14 h-14 rounded-2xl bg-[#2B2420] border border-[#3A322B] items-center justify-center mb-3">
-              <Text className="text-[#8C7F6E] text-2xl">🛵</Text>
+            <View
+              className={`w-14 h-14 rounded-2xl items-center justify-center mb-3 ${
+                temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+              }`}
+              style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+            >
+              <Text className="text-2xl" style={{ color: t.textSecondary }}>🛵</Text>
             </View>
-            <Text className="text-[#8C7F6E] text-sm mb-1">Pedido vacío</Text>
-            <Text className="text-[#B8AC9B] text-xs">Toca un plato del menú para agregarlo</Text>
+            <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Pedido vacío</Text>
+            <Text className="text-xs" style={{ color: t.placeholder }}>Toca un plato del menú para agregarlo</Text>
           </Animated.View>
         ) : (
           <Animated.FlatList
@@ -620,8 +675,8 @@ export default function DeliveryNuevoScreen() {
                     rightThreshold={40}
                     friction={2}
                     renderRightActions={() => (
-                      <View className="bg-[#D4432B] rounded-xl items-center justify-center w-16">
-                        <Text className="text-[#F7F2E9] text-xl">🗑</Text>
+                      <View className="rounded-xl items-center justify-center w-16" style={{ backgroundColor: t.primary }}>
+                        <Text className="text-xl" style={{ color: t.onPrimary }}>🗑</Text>
                       </View>
                     )}
                     onSwipeableOpen={(direction) => {
@@ -630,22 +685,28 @@ export default function DeliveryNuevoScreen() {
                     }}
                   >
                     <View
-                      className={`rounded-xl px-4 py-3 flex-row items-center border-2 ${
-                        esCustom
-                          ? 'bg-[#EAE2F8] border-[#EAE2F8]'
-                          : 'bg-[#F7F2E9] border-[#F7F2E9]'
-                      }`}
+                      className="rounded-xl px-4 py-3 flex-row items-center border-2"
+                      style={
+                        temaId === 'claro'
+                          ? {
+                              backgroundColor: esCustom ? t.extrasSheet : t.pillBg,
+                              borderColor: '#1E1A17',
+                            }
+                          : esCustom
+                            ? { backgroundColor: t.extrasSheet, borderColor: t.extrasSheet }
+                            : { backgroundColor: t.pillBg, borderColor: t.pillBg }
+                      }
                     >
                       <View className="flex-1 pr-2">
                         <ScalePressable onPress={() => abrirPlatoEditar(index)} pressedScale={0.98}>
                           <View className="flex-row items-center gap-1">
                             {esCustom && (
-                              <View className="bg-[#6C4FBF] rounded px-1.5 py-0.5">
-                                <Text className="text-[#F7F2E9] text-[10px] font-bold">PERSO</Text>
+                              <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: t.yape }}>
+                                <Text className="text-[10px] font-bold" style={{ color: t.onPrimary }}>PERSO</Text>
                               </View>
                             )}
-                            <Text className="text-[#2B2420] font-semibold flex-shrink">{item.name}</Text>
-                            <Text className="text-[#8C7F6E] text-xs">✎</Text>
+                            <Text className="font-semibold flex-shrink" style={{ color: t.pillText }}>{item.name}</Text>
+                            <Text className="text-xs" style={{ color: t.textSecondary }}>✎</Text>
                           </View>
                         </ScalePressable>
 
@@ -660,23 +721,23 @@ export default function DeliveryNuevoScreen() {
                             <View className="mt-0.5">
                               {item.entrada && (
                                 <View className="flex-row items-center gap-1.5">
-                                  <Text className="text-[#8C7F6E] text-sm">+ {item.entrada.name}</Text>
-                                  <View className="bg-[#4D7C4D]/15 rounded-full px-1.5 py-0.5">
-                                    <Text className="text-[#4D7C4D] text-[10px] font-bold">
+                                  <Text className="text-sm" style={{ color: t.textSecondary }}>+ {item.entrada.name}</Text>
+                                  <View className="rounded-full px-1.5 py-0.5" style={{ backgroundColor: alpha(t.success, 15) }}>
+                                    <Text className="text-[10px] font-bold" style={{ color: t.success }}>
                                       Incluida
                                     </Text>
                                   </View>
                                 </View>
                               )}
                               {item.entradaPersonalizada && (
-                                <Text className="text-[#6C4FBF] text-sm mt-0.5">
+                                <Text className="text-sm mt-0.5" style={{ color: t.yape }}>
                                   + {item.entradaPersonalizada.name} · S/ {item.entradaPersonalizada.price.toFixed(2)}
                                 </Text>
                               )}
-                              <Text className="text-[#8C7F6E] text-xs mt-0.5">✎</Text>
+                              <Text className="text-xs mt-0.5" style={{ color: t.textSecondary }}>✎</Text>
                             </View>
                           ) : (
-                            <Text className="text-[#8C7F6E] text-xs mt-0.5 underline">
+                            <Text className="text-xs mt-0.5 underline" style={{ color: t.textSecondary }}>
                               Agregar entrada
                             </Text>
                           )}
@@ -688,16 +749,16 @@ export default function DeliveryNuevoScreen() {
                             pressedScale={0.9}
                           >
                             <View
-                              className={`rounded-full px-2.5 py-1 border ${
+                              className="rounded-full px-2.5 py-1 border"
+                              style={
                                 item.paraLlevar
-                                  ? 'bg-[#D4432B] border-[#D4432B]'
-                                  : 'bg-transparent border-[#1E1A17]/25'
-                              }`}
+                                  ? { backgroundColor: t.primary, borderColor: t.primary }
+                                  : { backgroundColor: 'transparent', borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.chip, 25) }
+                              }
                             >
                               <Text
-                                className={`text-[11px] font-bold ${
-                                  item.paraLlevar ? 'text-[#F7F2E9]' : 'text-[#1E1A17]/60'
-                                }`}
+                                className="text-[11px] font-bold"
+                                style={{ color: item.paraLlevar ? t.onPrimary : alpha(t.chip, 60) }}
                               >
                                 🥡 Taper · S/ {(item.taperoPrecio ?? 1).toFixed(2)}
                               </Text>
@@ -708,16 +769,16 @@ export default function DeliveryNuevoScreen() {
                             pressedScale={0.9}
                           >
                             <View
-                              className={`rounded-full px-2.5 py-1 border ${
+                              className="rounded-full px-2.5 py-1 border"
+                              style={
                                 !item.paraLlevar
-                                  ? 'bg-[#2B2420] border-[#2B2420]'
-                                  : 'bg-transparent border-[#1E1A17]/25'
-                              }`}
+                                  ? { backgroundColor: t.chip, borderColor: t.chip }
+                                  : { backgroundColor: 'transparent', borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.chip, 25) }
+                              }
                             >
                               <Text
-                                className={`text-[11px] font-bold ${
-                                  !item.paraLlevar ? 'text-[#F7F2E9]' : 'text-[#1E1A17]/60'
-                                }`}
+                                className="text-[11px] font-bold"
+                                style={{ color: !item.paraLlevar ? t.onPrimary : alpha(t.chip, 60) }}
                               >
                                 🍽 Plato
                               </Text>
@@ -727,9 +788,10 @@ export default function DeliveryNuevoScreen() {
 
                         {notaAbierta === index ? (
                           <TextInput
-                            className="mt-1.5 bg-[#1E1A17]/5 rounded-lg px-3 py-2 text-[#2B2420] text-sm"
+                            className="mt-1.5 rounded-lg px-3 py-2 text-sm"
+                            style={{ backgroundColor: alpha(t.chip, 5), color: t.pillText }}
                             placeholder="Comentario para la cocina..."
-                            placeholderTextColor="#B8AC9B"
+                            placeholderTextColor={t.placeholder}
                             value={item.notes ?? ''}
                             onChangeText={(text) => handleChangeNota(index, text)}
                             onBlur={() => setNotaAbierta(null)}
@@ -744,11 +806,11 @@ export default function DeliveryNuevoScreen() {
                             pressedScale={0.98}
                           >
                             {item.notes ? (
-                              <Text className="text-[#4D7C4D] text-xs mt-1 font-semibold">
+                              <Text className="text-xs mt-1 font-semibold" style={{ color: t.success }}>
                                 💬 {item.notes}
                               </Text>
                             ) : (
-                              <Text className="text-[#B8AC9B] text-xs mt-1.5">
+                              <Text className="text-xs mt-1.5" style={{ color: t.placeholder }}>
                                 💬 Nota para la cocina
                               </Text>
                             )}
@@ -757,7 +819,7 @@ export default function DeliveryNuevoScreen() {
                       </View>
 
                       <View className="items-end gap-2">
-                        <Text className="text-[#2B2420] font-bold text-sm">
+                        <Text className="font-bold text-sm" style={{ color: t.pillText }}>
                           S/ {item.unitPrice.toFixed(2)}
                         </Text>
                         <View className="flex-row items-center gap-1.5">
@@ -765,19 +827,19 @@ export default function DeliveryNuevoScreen() {
                             onPress={() => handleChangeCantidad(index, -1)}
                             pressedScale={0.85}
                           >
-                            <View className="w-7 h-7 rounded-full bg-[#1E1A17]/10 items-center justify-center">
-                              <Text className="text-[#2B2420] text-base font-bold leading-none">−</Text>
+                            <View className="w-7 h-7 rounded-full items-center justify-center" style={{ backgroundColor: alpha(t.chip, 10) }}>
+                              <Text className="text-base font-bold leading-none" style={{ color: t.pillText }}>−</Text>
                             </View>
                           </ScalePressable>
-                          <Text className="text-[#2B2420] text-base font-extrabold min-w-[22px] text-center">
+                          <Text className="text-base font-extrabold min-w-[22px] text-center" style={{ color: t.pillText }}>
                             {item.quantity}
                           </Text>
                           <ScalePressable
                             onPress={() => handleChangeCantidad(index, 1)}
                             pressedScale={0.85}
                           >
-                            <View className="w-7 h-7 rounded-full bg-[#D4432B] items-center justify-center">
-                              <Text className="text-[#F7F2E9] text-base font-bold leading-none">+</Text>
+                            <View className="w-7 h-7 rounded-full items-center justify-center" style={{ backgroundColor: t.primary }}>
+                              <Text className="text-base font-bold leading-none" style={{ color: t.onPrimary }}>+</Text>
                             </View>
                           </ScalePressable>
                         </View>
@@ -791,23 +853,28 @@ export default function DeliveryNuevoScreen() {
         )}
       </View>
 
-      <View className="mt-6 -mx-6 bg-[#2B2420]/70 border-t border-[#3A322B] rounded-t-3xl px-6 pt-5 pb-8">
+      <View
+        className={`mt-6 -mx-6 rounded-t-3xl px-6 pt-5 pb-8 ${
+          temaId === 'claro' ? 'border-t-2' : 'border-t'
+        }`}
+        style={{ backgroundColor: alpha(t.surface, 70), borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+      >
         <View className="flex-row items-end justify-between mb-4">
           <View>
-            <Text className="text-[#8C7F6E] text-xs font-semibold uppercase tracking-wider">Total</Text>
-            <Text className="text-[#B8AC9B] text-xs mt-1">
+            <Text className="text-xs font-semibold uppercase tracking-wider" style={{ color: t.textSecondary }}>Total</Text>
+            <Text className="text-xs mt-1" style={{ color: t.placeholder }}>
               {comanda.length === 0
                 ? 'Comanda vacía'
                 : `${cantItems} ${cantItems === 1 ? 'item' : 'items'}`}
             </Text>
           </View>
           <Animated.View key={total.toFixed(2)} entering={ZoomIn.duration(180)}>
-            <Text className="text-[#F7F2E9] text-3xl font-extrabold">S/ {total.toFixed(2)}</Text>
+            <Text className="text-3xl font-extrabold" style={{ color: t.textPrimary }}>S/ {total.toFixed(2)}</Text>
           </Animated.View>
         </View>
 
         {errorEnvio !== '' && (
-          <Text className="text-[#D4432B] text-sm text-center mb-3">{errorEnvio}</Text>
+          <Text className="text-sm text-center mb-3" style={{ color: t.primary }}>{errorEnvio}</Text>
         )}
 
         <ScalePressable
@@ -817,14 +884,33 @@ export default function DeliveryNuevoScreen() {
         >
           <View
             className={`rounded-2xl py-4 items-center ${
-              enviando
-                ? 'bg-[#4D7C4D]'
-                : comanda.length === 0 || !clienteValido
-                  ? 'bg-[#2B2420] opacity-60'
-                  : 'bg-[#D4432B]'
+              (comanda.length === 0 || !clienteValido) && !enviando ? 'opacity-60 border-2' : ''
             }`}
+            style={{
+              backgroundColor: enviando
+                ? t.success
+                : comanda.length === 0 || !clienteValido
+                  ? temaId === 'claro'
+                    ? t.pillBg
+                    : t.surface
+                  : t.primary,
+              borderColor:
+                (comanda.length === 0 || !clienteValido) && !enviando
+                  ? temaId === 'claro'
+                    ? '#1E1A17'
+                    : t.border
+                  : undefined,
+            }}
           >
-            <Text className="text-[#F7F2E9] text-center font-bold text-base">
+            <Text
+              className="text-center font-bold text-base"
+              style={{
+                color:
+                  temaId === 'claro' && (comanda.length === 0 || !clienteValido)
+                    ? t.pillText
+                    : t.onPrimary,
+              }}
+            >
               {enviando ? (edit ? '✓ Comanda actualizada' : '✓ Enviado a cocina') : edit ? 'Guardar cambios' : 'Enviar a cocina'}
             </Text>
           </View>
@@ -887,22 +973,38 @@ export default function DeliveryNuevoScreen() {
               className="absolute inset-0 bg-black/50"
               onPress={() => setExtrasAbierto(false)}
             />
-            <View className="bg-[#1E1A17] border-t border-[#3A322B] rounded-t-3xl h-[55%] pt-5 pb-8 px-5">
+            <View
+              className={`rounded-t-3xl h-[55%] pt-5 pb-8 px-5 ${
+                temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
+              }`}
+              style={{ backgroundColor: t.surfaceElevated, borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+            >
               <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-[#F7F2E9] font-extrabold text-lg">Extras</Text>
+                <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>Extras</Text>
                 <ScalePressable onPress={() => setExtrasAbierto(false)} pressedScale={0.9} hitSlop={8}>
-                  <View className="w-9 h-9 rounded-full bg-[#2B2420] items-center justify-center">
-                    <X size={16} color="#8C7F6E" />
+                  <View
+                    className={`w-9 h-9 rounded-full items-center justify-center ${
+                      temaId === 'claro' ? 'border-2 border-[#1E1A17]' : ''
+                    }`}
+                    style={{ backgroundColor: t.surface }}
+                  >
+                    <X size={16} color={t.textSecondary} />
                   </View>
                 </ScalePressable>
               </View>
 
-              <View className="flex-row items-center bg-[#2B2420] border border-[#3A322B] rounded-xl px-3 py-2.5 mb-4 gap-2">
-                <Search size={16} color="#8C7F6E" />
+              <View
+                className={`flex-row items-center rounded-xl px-3 py-2.5 mb-4 gap-2 ${
+                  temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                }`}
+                style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+              >
+                <Search size={16} color={t.textSecondary} />
                 <TextInput
-                  className="flex-1 text-[#F7F2E9] text-base"
+                  className="flex-1 text-base"
+                  style={{ color: t.textPrimary }}
                   placeholder="Buscar..."
-                  placeholderTextColor="#8C7F6E"
+                  placeholderTextColor={t.textSecondary}
                   value={busquedaExtras}
                   onChangeText={setBusquedaExtras}
                   autoCorrect={false}
@@ -910,7 +1012,7 @@ export default function DeliveryNuevoScreen() {
               </View>
 
               {extrasBuscados.length === 0 ? (
-                <Text className="text-[#8C7F6E] text-sm text-center py-10">Sin resultados</Text>
+                <Text className="text-sm text-center py-10" style={{ color: t.textSecondary }}>Sin resultados</Text>
               ) : (
                 <Animated.FlatList
                   data={extrasBuscados}
@@ -924,24 +1026,30 @@ export default function DeliveryNuevoScreen() {
                       pressedScale={0.95}
                       className="flex-1 mb-3"
                     >
-                      <View className="bg-[#2B2420] border border-[#3A322B] rounded-2xl overflow-hidden">
+                      <View
+                        className={`rounded-2xl overflow-hidden ${
+                          temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                        }`}
+                        style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+                      >
                         {item.image !== '' && (
                           <Image
                             source={{ uri: item.image }}
-                            className="w-full h-24 bg-[#1E1A17]"
+                            className="w-full h-24"
+                            style={{ backgroundColor: t.background }}
                             resizeMode="cover"
                           />
                         )}
                         <View className="px-3 py-2.5">
-                          <Text className="text-[#F7F2E9] font-semibold text-sm" numberOfLines={2}>
+                          <Text className="font-semibold text-sm" style={{ color: t.textPrimary }} numberOfLines={2}>
                             {item.name}
                           </Text>
                           <View className="flex-row items-center justify-between mt-1.5">
-                            <Text className="text-[#8C7F6E] text-xs font-semibold">
+                            <Text className="text-xs font-semibold" style={{ color: t.textSecondary }}>
                               S/ {item.price.toFixed(2)}
                             </Text>
-                            <View className="w-6 h-6 rounded-full bg-[#6C4FBF] items-center justify-center">
-                              <Plus size={13} color="#F7F2E9" strokeWidth={2.5} />
+                            <View className="w-6 h-6 rounded-full items-center justify-center" style={{ backgroundColor: t.yape }}>
+                              <Plus size={13} color={t.onPrimary} strokeWidth={2.5} />
                             </View>
                           </View>
                         </View>

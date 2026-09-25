@@ -38,6 +38,8 @@ import {
 } from 'lucide-react-native';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Sale, MetodoPago, OrderItem } from '../../src/types';
+import { useTema } from '../../src/context/TemaContext';
+import { alpha, type TemaTokens } from '../../src/theme/temas';
 import { ScalePressable } from '../../src/components/ScalePressable';
 import { GraficoDonut } from '../../src/components/GraficoDonut';
 import { GraficoSemana } from '../../src/components/GraficoSemana';
@@ -55,17 +57,6 @@ import {
   eliminarIngresoManual,
   eliminarFiadoManual,
 } from '../../src/services/reports';
-
-const COLOR = {
-  fondo: '#1E1A17',
-  superficie: '#F7F2E9',
-  marron: '#2B2420',
-  muted: '#8C7F6E',
-  borde: '#D8CBB8',
-  placeholder: '#B8AC9B',
-  primario: '#D4432B',
-  verde: '#4D7C4D',
-};
 
 function hapticImpact() {
   if (Platform.OS === 'web') return;
@@ -91,16 +82,22 @@ function TarjetaDato({
   valor: string;
   color: string;
 }) {
+  const { t, temaId } = useTema();
   return (
-    <View className="flex-1 bg-[#2B2420] rounded-2xl border border-[#3A322B] px-4 py-3">
+    <View
+      className={`flex-1 rounded-2xl px-4 py-3 ${
+        temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+      }`}
+      style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+    >
       <View className="flex-row items-center gap-1.5 mb-0.5">
         {typeof label === 'string' ? (
-          <Text className="text-[#8C7F6E] text-xs">{label}</Text>
+          <Text className="text-xs" style={{ color: t.textSecondary }}>{label}</Text>
         ) : (
           label
         )}
       </View>
-      <Text className={`text-xl font-extrabold ${color}`}>{valor}</Text>
+      <Text className="text-xl font-extrabold" style={{ color }}>{valor}</Text>
     </View>
   );
 }
@@ -116,12 +113,13 @@ function FilaRanking({
   cantidad: number;
   total: number;
 }) {
+  const { t } = useTema();
   return (
     <View className="flex-row items-center py-2">
-      <Text className="text-[#D4432B] font-extrabold w-6">{rank}</Text>
-      <Text className="text-[#F7F2E9] font-semibold flex-shrink flex-1">{name}</Text>
-      <Text className="text-[#8C7F6E] text-xs font-bold mr-2">{cantidad}x</Text>
-      <Text className="text-[#4D7C4D] font-extrabold">S/ {total.toFixed(2)}</Text>
+      <Text className="font-extrabold w-6" style={{ color: t.primary }}>{rank}</Text>
+      <Text className="font-semibold flex-shrink flex-1" style={{ color: t.textPrimary }}>{name}</Text>
+      <Text className="text-xs font-bold mr-2" style={{ color: t.textSecondary }}>{cantidad}x</Text>
+      <Text className="font-extrabold" style={{ color: t.success }}>S/ {total.toFixed(2)}</Text>
     </View>
   );
 }
@@ -232,7 +230,7 @@ function subtotalesPorGrupo(ventas: Sale[]) {
   return { mesas, deliveries, entregas };
 }
 
-function seccionesReporte(sales: Sale[], baseSales?: Sale[]): SeccionReporte[] {
+function seccionesReporte(sales: Sale[], baseSales: Sale[] | undefined, t: TemaTokens): SeccionReporte[] {
   const secciones: SeccionReporte[] = [];
   const totales = subtotalesPorGrupo(baseSales ?? sales);
 
@@ -286,8 +284,8 @@ function seccionesReporte(sales: Sale[], baseSales?: Sale[]): SeccionReporte[] {
     secciones.push({
       title: (
         <View className="flex-row items-center gap-1.5">
-          <Truck size={14} color="#6C4FBF" strokeWidth={2.5} />
-          <Text className="text-[#F7F2E9] font-extrabold text-base">Delivery</Text>
+          <Truck size={14} color={t.yape} strokeWidth={2.5} />
+          <Text className="font-extrabold text-base" style={{ color: t.textPrimary }}>Delivery</Text>
         </View>
       ),
       grupo: true,
@@ -301,8 +299,8 @@ function seccionesReporte(sales: Sale[], baseSales?: Sale[]): SeccionReporte[] {
     secciones.push({
       title: (
         <View className="flex-row items-center gap-1.5">
-          <ShoppingBag size={14} color="#E8A33D" strokeWidth={2.5} />
-          <Text className="text-[#F7F2E9] font-extrabold text-base">Para llevar</Text>
+          <ShoppingBag size={14} color={t.accent} strokeWidth={2.5} />
+          <Text className="font-extrabold text-base" style={{ color: t.textPrimary }}>Para llevar</Text>
         </View>
       ),
       grupo: true,
@@ -315,6 +313,7 @@ function seccionesReporte(sales: Sale[], baseSales?: Sale[]): SeccionReporte[] {
 }
 
 export default function AdminScreen() {
+  const { t, temaId } = useTema();
   const [seccion, setSeccion] = useState<'resumen' | 'reporte' | 'cuaderno'>('resumen');
   const [vistaResumen, setVistaResumen] = useState<'graficas' | 'ranking'>('graficas');
   const [fechaReporte, setFechaReporte] = useState(() => fechaLocalAYYYYMMDD(new Date()));
@@ -595,15 +594,15 @@ export default function AdminScreen() {
   function etiquetaMetodo(metodo?: MetodoPago | null) {
     if (metodo === 'YAPE') {
       return {
-        icono: <Smartphone size={12} color="#6C4FBF" strokeWidth={2.5} />,
+        icono: <Smartphone size={12} color={t.yape} strokeWidth={2.5} />,
         texto: 'Yape',
-        color: '#6C4FBF',
+        color: t.yape,
       };
     }
     return {
-      icono: <Banknote size={12} color="#4D7C4D" strokeWidth={2.5} />,
+      icono: <Banknote size={12} color={t.success} strokeWidth={2.5} />,
       texto: 'Efectivo',
-      color: '#4D7C4D',
+      color: t.success,
     };
   }
 
@@ -632,13 +631,13 @@ export default function AdminScreen() {
     .reduce((a, i) => a + i.monto, 0);
 
   return (
-    <View className="flex-1 bg-[#1E1A17] px-6 pt-16">
+    <View className="flex-1 px-6 pt-16" style={{ backgroundColor: t.background }}>
       <Logo fuente="logo2" altura={44} estilo={{ marginTop: 2, marginBottom: 12 }} />
-      <Text className="text-[#F7F2E9] text-2xl font-extrabold mb-1">{titulo}</Text>
-      <Text className="text-[#8C7F6E] text-sm mb-6">{subtitulo}</Text>
+      <Text className="text-2xl font-extrabold mb-1" style={{ color: t.textPrimary }}>{titulo}</Text>
+      <Text className="text-sm mb-6" style={{ color: t.textSecondary }}>{subtitulo}</Text>
 
       <View className="flex-row gap-2 mb-6">
-        <View className="flex-row flex-1 bg-[#2B2420] rounded-full p-1">
+        <View className="flex-row flex-1 rounded-full p-1" style={{ backgroundColor: t.surface }}>
           {(['resumen', 'reporte', 'cuaderno'] as const).map((opcion) => {
             const activa = seccion === opcion;
             return (
@@ -648,9 +647,13 @@ export default function AdminScreen() {
                   hapticImpact();
                   setSeccion(opcion);
                 }}
-                className={`flex-1 py-2 rounded-full items-center ${activa ? 'bg-[#D4432B]' : ''}`}
+                className="flex-1 py-2 rounded-full items-center"
+                style={activa ? { backgroundColor: t.primary } : undefined}
               >
-                <Text className={`font-bold text-xs ${activa ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
+                <Text
+                  className="font-bold text-xs"
+                  style={{ color: activa ? t.onPrimary : t.textSecondary }}
+                >
                   {opcion === 'resumen' ? 'Resumen' : opcion === 'reporte' ? 'Reporte' : 'Cuaderno'}
                 </Text>
               </Pressable>
@@ -662,7 +665,7 @@ export default function AdminScreen() {
       {seccion === 'resumen' ? (
         resumenQuery.data ? (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-            <View className="flex-row bg-[#2B2420] rounded-full p-1 mb-4">
+            <View className="flex-row rounded-full p-1 mb-4" style={{ backgroundColor: t.surface }}>
               {(['graficas', 'ranking'] as const).map((v) => {
                 const activa = vistaResumen === v;
                 return (
@@ -672,15 +675,16 @@ export default function AdminScreen() {
                       hapticImpact();
                       setVistaResumen(v);
                     }}
-                    className={`flex-1 py-2 rounded-full items-center ${activa ? 'bg-[#6C4FBF]' : ''}`}
+                    className="flex-1 py-2 rounded-full items-center"
+                    style={activa ? { backgroundColor: t.yape } : undefined}
                   >
                     <View className="flex-row items-center gap-1.5">
                       {v === 'graficas' ? (
-                        <BarChart3 size={15} color={activa ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                        <BarChart3 size={15} color={activa ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                       ) : (
-                        <Trophy size={15} color={activa ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                        <Trophy size={15} color={activa ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                       )}
-                      <Text className={`font-bold text-sm ${activa ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
+                      <Text className="font-bold text-sm" style={{ color: activa ? t.onPrimary : t.textSecondary }}>
                         {v === 'graficas' ? 'Gráficas' : 'Ranking'}
                       </Text>
                     </View>
@@ -695,20 +699,25 @@ export default function AdminScreen() {
                   <TarjetaDato
                     label="Total semana"
                     valor={`S/ ${totalSemana.toFixed(2)}`}
-                    color="text-[#E8A33D]"
+                    color={t.accent}
                   />
                   <TarjetaDato
                     label="Hoy"
                     valor={hoyDia ? `S/ ${hoyDia.total.toFixed(2)}` : 'S/ 0.00'}
-                    color="text-[#4D7C4D]"
+                    color={t.success}
                   />
                 </View>
 
-                <View className="bg-[#2B2420] rounded-2xl border border-[#3A322B] px-4 py-4 mb-4">
-                  <Text className="text-[#F7F2E9] font-extrabold text-base mb-1">
+                <View
+                  className={`rounded-2xl px-4 py-4 mb-4 ${
+                    temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                  }`}
+                  style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+                >
+                  <Text className="font-extrabold text-base mb-1" style={{ color: t.textPrimary }}>
                     Mesa · Delivery
                   </Text>
-                  <Text className="text-[#8C7F6E] text-xs mb-4">
+                  <Text className="text-xs mb-4" style={{ color: t.textSecondary }}>
                     Ventas de hoy por canal · el "para llevar" cuenta como mesa · toca un segmento para verlo
                   </Text>
                   <GraficoDonut
@@ -717,11 +726,16 @@ export default function AdminScreen() {
                   />
                 </View>
 
-                <View className="bg-[#2B2420] rounded-2xl border border-[#3A322B] px-4 py-4 mb-4">
-                  <Text className="text-[#F7F2E9] font-extrabold text-base mb-1">
+                <View
+                  className={`rounded-2xl px-4 py-4 mb-4 ${
+                    temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                  }`}
+                  style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+                >
+                  <Text className="font-extrabold text-base mb-1" style={{ color: t.textPrimary }}>
                     Subida / Caída de ventas por día
                   </Text>
-                  <Text className="text-[#8C7F6E] text-xs mb-4">
+                  <Text className="text-xs mb-4" style={{ color: t.textSecondary }}>
                     Lunes a domingo · comparación contra el día anterior
                   </Text>
                   <GraficoSemana dias={resumenQuery.data.dias} />
@@ -729,15 +743,20 @@ export default function AdminScreen() {
               </>
             ) : (
               <>
-                <View className="bg-[#2B2420] rounded-2xl border border-[#3A322B] px-4 py-4 mb-4">
-                  <View className="flex-row items-center gap-2">
-                    <Trophy size={16} color="#E8A33D" strokeWidth={2.5} />
-                    <Text className="text-[#F7F2E9] font-extrabold text-base">
+                <View
+                    className={`rounded-2xl px-4 py-4 mb-4 ${
+                      temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                    }`}
+                    style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+                  >
+                    <View className="flex-row items-center gap-2">
+                      <Trophy size={16} color={t.accent} strokeWidth={2.5} />
+                    <Text className="font-extrabold text-base" style={{ color: t.textPrimary }}>
                       Platos más vendidos de la semana
                     </Text>
                   </View>
                   {resumenQuery.data.rankingSemana.length === 0 ? (
-                    <Text className="text-[#8C7F6E] text-sm py-2">Sin ventas esta semana</Text>
+                    <Text className="text-sm py-2" style={{ color: t.textSecondary }}>Sin ventas esta semana</Text>
                   ) : (
                     resumenQuery.data.rankingSemana.map((it, i) => (
                       <FilaRanking
@@ -751,15 +770,21 @@ export default function AdminScreen() {
                   )}
                 </View>
 
-                <Text className="text-[#F7F2E9] font-extrabold text-base mb-3">
+                <Text className="font-extrabold text-base mb-3" style={{ color: t.textPrimary }}>
                   Ranking por día
                 </Text>
                 {resumenQuery.data.dias.map((d) => (
-                  <View key={d.date} className="bg-[#2B2420] rounded-2xl border border-[#3A322B] px-4 py-3 mb-3">
+                  <View
+                  key={d.date}
+                  className={`rounded-2xl px-4 py-3 mb-3 ${
+                    temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                  }`}
+                  style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+                >
                     <View className="flex-row items-center justify-between mb-1">
-                      <Text className="text-[#F7F2E9] font-bold text-sm">{fechaCortaDia(d.date)}</Text>
+                      <Text className="font-bold text-sm" style={{ color: t.textPrimary }}>{fechaCortaDia(d.date)}</Text>
                       {d.total > 0 ? (
-                        <Text className="text-[#4D7C4D] font-extrabold">S/ {d.total.toFixed(2)}</Text>
+                        <Text className="font-extrabold" style={{ color: t.success }}>S/ {d.total.toFixed(2)}</Text>
                       ) : (
                         <Text className="text-[#3A322B] text-xs font-bold">Sin ventas</Text>
                       )}
@@ -781,46 +806,54 @@ export default function AdminScreen() {
           </ScrollView>
         ) : (
           <View className="flex-1 items-center justify-center">
-            <Text className="text-[#8C7F6E] text-sm">Cargando resumen...</Text>
+            <Text className="text-sm" style={{ color: t.textSecondary }}>Cargando resumen...</Text>
           </View>
         )
       ) : seccion === 'cuaderno' ? (
         <View className="flex-1">
           {cuadernoQuery.isLoading ? (
-            <Text className="text-[#8C7F6E] text-sm">Cargando cuaderno...</Text>
+            <Text className="text-sm" style={{ color: t.textSecondary }}>Cargando cuaderno...</Text>
           ) : !cuaderno ? (
             <View className="flex-1 items-center justify-center gap-2">
-              <NotebookText size={44} color="#8C7F6E" strokeWidth={1.5} />
-              <Text className="text-[#F7F2E9] font-bold text-lg">Sin movimientos</Text>
-              <Text className="text-[#8C7F6E] text-sm text-center">
+              <NotebookText size={44} color={t.textSecondary} strokeWidth={1.5} />
+              <Text className="font-bold text-lg" style={{ color: t.textPrimary }}>Sin movimientos</Text>
+              <Text className="text-sm text-center" style={{ color: t.textSecondary }}>
                 Aún no hay fiados anotados.
               </Text>
             </View>
           ) : (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
               {cobrosHoy.length > 0 && (
-                <View className="bg-[#6C4FBF]/15 border border-[#6C4FBF]/40 rounded-2xl px-4 py-3 mb-4">
+                <View
+                  className={`rounded-2xl px-4 py-3 mb-4 ${
+                    temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                  }`}
+                  style={{
+                    backgroundColor: alpha(t.yape, 15),
+                    borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.yape, 40),
+                  }}
+                >
                   <View className="flex-row items-center gap-1.5 mb-1">
                     <Clock size={14} color="#B79BE8" strokeWidth={2.5} />
                     <Text className="text-[#B79BE8] font-extrabold text-sm">
                       Cobros de hoy (guía)
                     </Text>
                   </View>
-                  <Text className="text-[#8C7F6E] text-[11px] mb-2">
+                  <Text className="text-[11px] mb-2" style={{ color: t.textSecondary }}>
                     Este dinero ya quedó contabilizado en el reporte del día del fiado · aquí solo como guía del método cobrado
                   </Text>
                   <View className="flex-row gap-2 mb-2">
-                    <View className="flex-row items-center gap-1 rounded-full bg-[#6C4FBF]/20 px-3 py-1">
+                    <View className="flex-row items-center gap-1 rounded-full px-3 py-1" style={{ backgroundColor: alpha(t.yape, 20) }}>
                       <Smartphone size={12} color="#B79BE8" strokeWidth={2.5} />
                       <Text className="text-xs font-bold" style={{ color: '#B79BE8' }}>Yape</Text>
-                      <Text className="text-xs font-extrabold text-[#F7F2E9]">
+                      <Text className="text-xs font-extrabold" style={{ color: t.textPrimary }}>
                         S/ {cobrosYapeHoy.toFixed(2)}
                       </Text>
                     </View>
-                    <View className="flex-row items-center gap-1 rounded-full bg-[#4D7C4D]/20 px-3 py-1">
+                    <View className="flex-row items-center gap-1 rounded-full px-3 py-1" style={{ backgroundColor: alpha(t.success, 20) }}>
                       <Banknote size={12} color="#7FB58A" strokeWidth={2.5} />
                       <Text className="text-xs font-bold" style={{ color: '#7FB58A' }}>Efectivo</Text>
-                      <Text className="text-xs font-extrabold text-[#F7F2E9]">
+                      <Text className="text-xs font-extrabold" style={{ color: t.textPrimary }}>
                         S/ {cobrosEfectivoHoy.toFixed(2)}
                       </Text>
                     </View>
@@ -831,7 +864,7 @@ export default function AdminScreen() {
                       <View key={e.id} className="flex-row items-center justify-between py-1">
                         <View className="flex-1">
                           <View className="flex-row items-center gap-2">
-                            <Text className="text-[#F7F2E9] text-sm font-semibold">
+                            <Text className="text-sm font-semibold" style={{ color: t.textPrimary }}>
                               {e.clienteNombre}
                             </Text>
                             <View
@@ -845,12 +878,12 @@ export default function AdminScreen() {
                             </View>
                           </View>
                           {e.fechaEntrega && e.fechaEntrega !== fechaLocalAYYYYMMDD(new Date()) && (
-                            <Text className="text-[#8C7F6E] text-[10px] mt-0.5">
+                            <Text className="text-[10px] mt-0.5" style={{ color: t.textSecondary }}>
                               del fiado del {fechaCortaDia(e.fechaEntrega)}
                             </Text>
                           )}
                         </View>
-                        <Text className="text-[#8C7F6E] text-xs mr-2">
+                        <Text className="text-xs mr-2" style={{ color: t.textSecondary }}>
                           {e.cobradoEn ? horaLima(e.cobradoEn) : ''}
                         </Text>
                         <Text className="text-[#B79BE8] font-extrabold">
@@ -866,17 +899,17 @@ export default function AdminScreen() {
                 <TarjetaDato
                   label="⏳ Fiados por cobrar"
                   valor={`S/ ${totalFiados.toFixed(2)}`}
-                  color="text-[#E8A33D]"
+                  color={t.accent}
                 />
                 <TarjetaDato
                   label={
                     <View className="flex-row items-center gap-1.5">
-                      <Banknote size={13} color="#4D7C4D" strokeWidth={2.5} />
-                      <Text className="text-[#8C7F6E] text-xs">Efectivo de hoy</Text>
+                      <Banknote size={13} color={t.success} strokeWidth={2.5} />
+                      <Text className="text-xs" style={{ color: t.textSecondary }}>Efectivo de hoy</Text>
                     </View>
                   }
                   valor={`S/ ${cobrosEfectivoHoy.toFixed(2)}`}
-                  color="text-[#4D7C4D]"
+                  color={t.success}
                 />
               </View>
               <View className="flex-row gap-3 mb-5">
@@ -884,16 +917,16 @@ export default function AdminScreen() {
                   label={
                     <View className="flex-row items-center gap-1.5">
                       <Clock size={13} color="#B79BE8" strokeWidth={2.5} />
-                      <Text className="text-[#8C7F6E] text-xs">Cobros de hoy</Text>
+                      <Text className="text-xs" style={{ color: t.textSecondary }}>Cobros de hoy</Text>
                     </View>
                   }
                   valor={`S/ ${totalCobrosHoy.toFixed(2)}`}
-                  color="text-[#B79BE8]"
+                  color="#B79BE8"
                 />
                 <TarjetaDato
                   label="Entradas"
                   valor={`${cuaderno.fiados.length + cuaderno.cobrosHoy.length}`}
-                  color="text-[#F7F2E9]"
+                  color={t.textPrimary}
                 />
               </View>
 
@@ -909,53 +942,59 @@ export default function AdminScreen() {
                   setErrorManual('');
                   setModalManual(true);
                 }}
-                className="bg-[#6C4FBF] rounded-full items-center mb-5"
+                className="rounded-full items-center mb-5" style={{ backgroundColor: t.yape }}
                 innerClassName="w-full py-3.5 items-center justify-center"
               >
-                <Text className="text-[#F7F2E9] font-bold text-base">＋ Agregar manualmente</Text>
+                <Text className="font-bold text-base" style={{ color: t.onPrimary }}>＋ Agregar manualmente</Text>
               </ScalePressable>
 
-              <Text className="text-[#F7F2E9] font-extrabold text-base mb-3">
+              <Text className="font-extrabold text-base mb-3" style={{ color: t.textPrimary }}>
                 ⏳ Fiados por cobrar
               </Text>
               {fiadosCuaderno.length === 0 ? (
-                <Text className="text-[#8C7F6E] text-sm text-center py-8">
+                <Text className="text-sm text-center py-8" style={{ color: t.textSecondary }}>
                   Sin fiados por cobrar.
                 </Text>
               ) : (
                 fiadosCuaderno.map((e) => (
-                  <View key={e.id} className="bg-[#2B2420] rounded-2xl border border-[#3A322B] px-4 py-3 mb-3">
+                  <View
+                  key={e.id}
+                  className={`rounded-2xl px-4 py-3 mb-3 ${
+                    temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                  }`}
+                  style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+                >
                     <View className="flex-row items-center justify-between">
-                      <Text className="text-[#F7F2E9] font-bold text-base flex-1">
+                      <Text className="font-bold text-base flex-1" style={{ color: t.textPrimary }}>
                         {e.clienteNombre}
                       </Text>
-                      <Text className="text-[#E8A33D] font-extrabold">
+                      <Text className="font-extrabold" style={{ color: t.accent }}>
                         S/ {e.monto.toFixed(2)}
                       </Text>
                     </View>
                     <View className="flex-row items-center gap-1.5 mt-0.5">
-                      <Clock size={12} color="#8C7F6E" strokeWidth={2.5} />
-                      <Text className="text-[#8C7F6E] text-xs">
+                      <Clock size={12} color={t.textSecondary} strokeWidth={2.5} />
+                      <Text className="text-xs" style={{ color: t.textSecondary }}>
                         Enviado {fechaHoraEntrada(e.createdAt)}
                       </Text>
                     </View>
                     <View className="flex-row items-center gap-1.5 mt-0.5">
-                      <Package size={12} color="#8C7F6E" strokeWidth={2.5} />
-                      <Text className="text-[#8C7F6E] text-xs">
+                      <Package size={12} color={t.textSecondary} strokeWidth={2.5} />
+                      <Text className="text-xs" style={{ color: t.textSecondary }}>
                         entrega {fechaCortaDia(e.fechaEntrega)}
                       </Text>
                     </View>
                     {e.telefono ? (
                       <View className="flex-row items-center gap-1.5 mt-0.5">
-                        <Phone size={12} color="#8C7F6E" strokeWidth={2.5} />
-                        <Text className="text-[#8C7F6E] text-xs">{e.telefono}</Text>
+                        <Phone size={12} color={t.textSecondary} strokeWidth={2.5} />
+                        <Text className="text-xs" style={{ color: t.textSecondary }}>{e.telefono}</Text>
                       </View>
                     ) : null}
                     {e.canal === 'manual' && (
                       <View className="flex-row items-center gap-2 mt-0.5">
                         <View className="flex-row items-center gap-1">
-                          <PenLine size={12} color="#6C4FBF" strokeWidth={2.5} />
-                          <Text className="text-[#6C4FBF] text-xs font-bold">
+                          <PenLine size={12} color={t.yape} strokeWidth={2.5} />
+                          <Text className="text-xs font-bold" style={{ color: t.yape }}>
                             Registrado manualmente
                           </Text>
                         </View>
@@ -963,21 +1002,21 @@ export default function AdminScreen() {
                           className="flex-row items-center gap-1 rounded-full px-2 py-0.5"
                           style={
                             e.canalVenta === 'delivery'
-                              ? { backgroundColor: '#6C4FBF33' }
-                              : { backgroundColor: '#E8A33D25' }
+                              ? { backgroundColor: alpha(t.yape, 20) }
+                              : { backgroundColor: alpha(t.accent, 14.5) }
                           }
                         >
                           {e.canalVenta === 'delivery' ? (
                             <Truck size={12} color="#B79BE8" strokeWidth={2.5} />
                           ) : (
-                            <Utensils size={12} color="#E8A33D" strokeWidth={2.5} />
+                            <Utensils size={12} color={t.accent} strokeWidth={2.5} />
                           )}
                           <Text
                             className="text-[10px] font-bold"
                             style={
                               e.canalVenta === 'delivery'
                                 ? { color: '#B79BE8' }
-                                : { color: '#E8A33D' }
+                                : { color: t.accent }
                             }
                           >
                             {e.canalVenta === 'delivery' ? 'Delivery' : 'Mesa'}
@@ -995,9 +1034,9 @@ className="bg-[#4D2B2B]/40 rounded-full"
                             innerClassName="w-full px-3.5 py-2 items-center justify-center"
                           >
                           {eliminandoFiadoId === e.id ? (
-                            <ActivityIndicator size={14} color="#D4432B" />
+                            <ActivityIndicator size={14} color={t.primary} />
                           ) : (
-                            <Trash2 size={14} color="#D4432B" strokeWidth={2.5} />
+                            <Trash2 size={14} color={t.primary} strokeWidth={2.5} />
                           )}
                         </ScalePressable>
                       )}
@@ -1013,12 +1052,13 @@ className="bg-[#4D2B2B]/40 rounded-full"
                           });
                         }}
                         pressedScale={0.95}
-                        className="bg-[#4D7C4D] rounded-full"
+                        className="rounded-full"
+                        style={{ backgroundColor: t.success }}
                         innerClassName="w-full px-4 py-2 items-center justify-center"
                       >
                         <View className="flex-row items-center gap-1.5">
-                          <Banknote size={12} color="#F7F2E9" strokeWidth={2.5} />
-                          <Text className="text-[#F7F2E9] font-bold text-xs">Cobrar</Text>
+                          <Banknote size={12} color={t.onPrimary} strokeWidth={2.5} />
+                          <Text className="font-bold text-xs" style={{ color: t.onPrimary }}>Cobrar</Text>
                         </View>
                       </ScalePressable>
                     </View>
@@ -1034,17 +1074,20 @@ className="bg-[#4D2B2B]/40 rounded-full"
             <ScalePressable
               onPress={() => cambiarReporte(-1)}
               pressedScale={0.9}
-              className="w-11 h-11 rounded-full bg-[#2B2420] border border-[#3A322B] items-center justify-center"
+              className={`w-11 h-11 rounded-full items-center justify-center ${
+                temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+              }`}
+              style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
               innerClassName="flex-1 w-full h-full items-center justify-center"
             >
-              <Text className="text-[#F7F2E9] text-lg font-bold leading-none">‹</Text>
+              <Text className="text-lg font-bold leading-none" style={{ color: t.textPrimary }}>‹</Text>
             </ScalePressable>
 
             <Pressable onPress={abrirCalendario} className="items-center">
-              <Text className="text-[#F7F2E9] font-extrabold text-base">
+              <Text className="font-extrabold text-base" style={{ color: t.textPrimary }}>
                 {formatearFecha(fechaReporte)}
               </Text>
-              <Text className="text-[#D4432B] text-xs font-bold mt-0.5">
+              <Text className="text-xs font-bold mt-0.5" style={{ color: t.primary }}>
                 {estaMismoDia ? 'HOY · toca para elegir' : 'Histórico · toca para elegir'}
               </Text>
             </Pressable>
@@ -1052,10 +1095,13 @@ className="bg-[#4D2B2B]/40 rounded-full"
             <ScalePressable
               onPress={() => cambiarReporte(1)}
               pressedScale={0.9}
-              className="w-11 h-11 rounded-full bg-[#2B2420] border border-[#3A322B] items-center justify-center"
+              className={`w-11 h-11 rounded-full items-center justify-center ${
+                temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+              }`}
+              style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
               innerClassName="flex-1 w-full h-full items-center justify-center"
             >
-              <Text className="text-[#F7F2E9] text-lg font-bold leading-none">›</Text>
+              <Text className="text-lg font-bold leading-none" style={{ color: t.textPrimary }}>›</Text>
             </ScalePressable>
           </View>
 
@@ -1063,20 +1109,20 @@ className="bg-[#4D2B2B]/40 rounded-full"
             onPress={() => mutacionExportar.mutate()}
             disabled={mutacionExportar.isPending}
             pressedScale={0.97}
-            className="mb-4 mt-2 bg-[#217346] rounded-2xl flex-row items-center justify-center border border-[#2F8F55]"
+            className="mb-4 mt-2 rounded-2xl flex-row items-center justify-center border" style={{ backgroundColor: t.excel, borderColor: '#2F8F55' }}
             innerClassName="w-full flex-row items-center justify-center gap-2.5 px-4 py-3"
           >
             {mutacionExportar.isPending ? (
-              <ActivityIndicator color="#F7F2E9" size="small" />
+              <ActivityIndicator color={t.onPrimary} size="small" />
             ) : (
               <>
-                <FileSpreadsheet size={16} color="#F7F2E9" strokeWidth={2.2} />
-                <Text className="text-[#F7F2E9] font-extrabold text-sm">Exportar Excel</Text>
+                <FileSpreadsheet size={16} color={t.onPrimary} strokeWidth={2.2} />
+                <Text className="font-extrabold text-sm" style={{ color: t.onPrimary }}>Exportar Excel</Text>
               </>
             )}
           </ScalePressable>
           {mutacionExportar.isError && (
-            <Text className="text-[#D4432B] text-xs text-center mb-2">
+            <Text className="text-xs text-center mb-2" style={{ color: t.primary }}>
               No se pudo exportar. Revisa la conexión.
             </Text>
           )}
@@ -1087,23 +1133,26 @@ className="bg-[#4D2B2B]/40 rounded-full"
                 hapticImpact();
                 setFiltroPanelAbierto(true);
               }}
-              className="border border-[#3A322B] bg-[#2B2420] rounded-full px-5 py-1.5"
+              className={`rounded-full px-5 py-1.5 ${
+                temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+              }`}
+              style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
             >
               <View className="flex-row items-center gap-1.5">
-                <Search size={12} color="#8C7F6E" strokeWidth={2.5} />
-                <Text className="text-[#8C7F6E] text-xs font-bold">Filtrar</Text>
+                <Search size={12} color={t.textSecondary} strokeWidth={2.5} />
+                <Text className="text-xs font-bold" style={{ color: t.textSecondary }}>Filtrar</Text>
               </View>
             </Pressable>
-            <Text className="text-[#8C7F6E] text-xs">Cuadre de pagos del día</Text>
+            <Text className="text-xs" style={{ color: t.textSecondary }}>Cuadre de pagos del día</Text>
           </View>
 
           {reporteQuery.isLoading ? (
-            <Text className="text-[#8C7F6E] text-sm">Cargando reporte...</Text>
+            <Text className="text-sm" style={{ color: t.textSecondary }}>Cargando reporte...</Text>
           ) : !reporteQuery.data ? (
             <View className="flex-1 items-center justify-center gap-2">
-              <BarChart3 size={44} color="#8C7F6E" strokeWidth={1.5} />
-              <Text className="text-[#F7F2E9] font-bold text-lg">Sin ventas este día</Text>
-              <Text className="text-[#8C7F6E] text-sm text-center">
+              <BarChart3 size={44} color={t.textSecondary} strokeWidth={1.5} />
+              <Text className="font-bold text-lg" style={{ color: t.textPrimary }}>Sin ventas este día</Text>
+              <Text className="text-sm text-center" style={{ color: t.textSecondary }}>
                 Las ventas cerradas aparecerán aquí.
               </Text>
             </View>
@@ -1112,22 +1161,24 @@ className="bg-[#4D2B2B]/40 rounded-full"
               showsVerticalScrollIndicator={false}
               stickySectionHeadersEnabled={false}
               contentContainerStyle={{ paddingBottom: 24 }}
-              sections={seccionesReporte(ventasVisibles, reporteSales)}
+              sections={seccionesReporte(ventasVisibles, reporteSales, t)}
               keyExtractor={(item) => item.key}
-              ItemSeparatorComponent={() => <View className="h-px bg-[#3A322B] mx-4" />}
+              ItemSeparatorComponent={() => <View className="h-px mx-4" style={{ backgroundColor: t.border }} />}
               SectionSeparatorComponent={() => <View className="h-5" />}
               ListHeaderComponent={
                 <>
                   {reporteQuery.data.numPendientes > 0 && (
-                    <View className="bg-[#E8A33D]/15 border border-[#E8A33D]/40 rounded-2xl px-4 py-3 mb-4 flex-row items-center justify-between">
+                    <View className={`rounded-2xl px-4 py-3 mb-4 flex-row items-center justify-between ${
+                    temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                  }`} style={{ backgroundColor: alpha(t.accent, 15), borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.accent, 40) }}>
                       <View className="flex-row items-center gap-1.5">
-                      <Hourglass size={12} color="#E8A33D" strokeWidth={2.5} />
-                      <Text className="text-[#E8A33D] font-bold text-sm">
+                      <Hourglass size={12} color={t.accent} strokeWidth={2.5} />
+                      <Text className="font-bold text-sm" style={{ color: t.accent }}>
                         {reporteQuery.data.numPendientes}{' '}
                         {reporteQuery.data.numPendientes === 1 ? 'pedido' : 'pedidos'} por cobrar
                       </Text>
                     </View>
-                      <Text className="text-[#E8A33D] text-lg font-extrabold">
+                      <Text className="text-lg font-extrabold" style={{ color: t.accent }}>
                         +S/ {reporteQuery.data.totalPendiente.toFixed(2)}
                       </Text>
                     </View>
@@ -1142,36 +1193,38 @@ className="bg-[#4D2B2B]/40 rounded-full"
                       .filter((c) => c.metodoPago === 'EFECTIVO')
                       .reduce((a, c) => a + c.monto, 0);
                     return (
-                      <View className="bg-[#6C4FBF]/15 border border-[#6C4FBF]/40 rounded-2xl px-4 py-3 mb-4">
+                      <View className={`rounded-2xl px-4 py-3 mb-4 ${
+                      temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                    }`} style={{ backgroundColor: alpha(t.yape, 15), borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.yape, 40) }}>
                         <View className="flex-row items-center gap-1.5 mb-1">
                         <Receipt size={14} color="#B79BE8" strokeWidth={2.5} />
                         <Text className="text-[#B79BE8] font-bold text-sm">
                           Cobros recibidos hoy de fiados de otros días
                         </Text>
                       </View>
-                        <Text className="text-[#8C7F6E] text-[11px] mb-2">
+                        <Text className="text-[11px] mb-2" style={{ color: t.textSecondary }}>
                           Este dinero NO es de este día · ya quedó contabilizado en el reporte del día del fiado
                         </Text>
                         <View className="flex-row flex-wrap items-center gap-2">
                           {yapeAjenos > 0 && (
-                            <View className="flex-row items-center gap-1 rounded-full bg-[#6C4FBF]/20 px-3 py-1">
+                            <View className="flex-row items-center gap-1 rounded-full px-3 py-1" style={{ backgroundColor: alpha(t.yape, 20) }}>
                               <Smartphone size={12} color="#B79BE8" strokeWidth={2.5} />
                               <Text className="text-xs font-bold" style={{ color: '#B79BE8' }}>Yape</Text>
-                              <Text className="text-xs font-extrabold text-[#F7F2E9]">
+                              <Text className="text-xs font-extrabold" style={{ color: t.textPrimary }}>
                                 S/ {yapeAjenos.toFixed(2)}
                               </Text>
                             </View>
                           )}
                           {efectivoAjenos > 0 && (
-                            <View className="flex-row items-center gap-1 rounded-full bg-[#4D7C4D]/20 px-3 py-1">
+                            <View className="flex-row items-center gap-1 rounded-full px-3 py-1" style={{ backgroundColor: alpha(t.success, 20) }}>
                               <Banknote size={12} color="#7FB58A" strokeWidth={2.5} />
                               <Text className="text-xs font-bold" style={{ color: '#7FB58A' }}>Efectivo</Text>
-                              <Text className="text-xs font-extrabold text-[#F7F2E9]">
+                              <Text className="text-xs font-extrabold" style={{ color: t.textPrimary }}>
                                 S/ {efectivoAjenos.toFixed(2)}
                               </Text>
                             </View>
                           )}
-                          <Text className="text-[#8C7F6E] text-xs font-bold">
+                          <Text className="text-xs font-bold" style={{ color: t.textSecondary }}>
                             {ajenos.length} cobro{ajenos.length === 1 ? '' : 's'} · Total S/ {totalAjenos.toFixed(2)}
                           </Text>
                         </View>
@@ -1179,26 +1232,28 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     );
                   })()}
                   {ingresosManuales.length > 0 && (
-                    <View className="bg-[#E8A33D]/10 border border-[#E8A33D]/30 rounded-2xl px-4 py-3 mb-4">
+                    <View className={`rounded-2xl px-4 py-3 mb-4 ${
+                      temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                    }`} style={{ backgroundColor: alpha(t.accent, 10), borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.accent, 30) }}>
                       <View className="flex-row items-center gap-1.5 mb-1">
-                        <PenLine size={14} color="#E8A33D" strokeWidth={2.5} />
-                        <Text className="text-[#E8A33D] font-bold text-sm">Ingresos manuales</Text>
+                        <PenLine size={14} color={t.accent} strokeWidth={2.5} />
+                        <Text className="font-bold text-sm" style={{ color: t.accent }}>Ingresos manuales</Text>
                       </View>
-                      <Text className="text-[#8C7F6E] text-[11px] mb-2">
+                      <Text className="text-[11px] mb-2" style={{ color: t.textSecondary }}>
                         Ajustes y cuadres registrados a mano para este día
                       </Text>
                       {ingresosManuales.map((i, idx) => (
                         <View key={idx} className="flex-row items-center justify-between py-1">
                           <View className="flex-1 flex-row items-center gap-2">
-                            <Text className="text-[#F7F2E9] text-sm font-semibold flex-shrink">
+                            <Text className="text-sm font-semibold flex-shrink" style={{ color: t.textPrimary }}>
                               {i.concepto}
                             </Text>
                             <View
                               className="flex-row items-center gap-1 rounded-full px-2 py-0.5"
                               style={
                                 i.metodoPago === 'YAPE'
-                                  ? { backgroundColor: '#6C4FBF33' }
-                                  : { backgroundColor: '#4D7C4D33' }
+                                  ? { backgroundColor: alpha(t.yape, 20) }
+                                  : { backgroundColor: alpha(t.success, 20) }
                               }
                             >
                               {i.metodoPago === 'YAPE' ? (
@@ -1219,7 +1274,7 @@ className="bg-[#4D2B2B]/40 rounded-full"
                               </Text>
                             </View>
                           </View>
-                          <Text className="text-[#E8A33D] font-extrabold mr-1">
+                          <Text className="font-extrabold mr-1" style={{ color: t.accent }}>
                             +S/ {i.monto.toFixed(2)}
                           </Text>
                           <Pressable
@@ -1231,7 +1286,7 @@ className="bg-[#4D2B2B]/40 rounded-full"
                             hitSlop={8}
                           >
                             {eliminandoIngresoIdx === idx ? (
-                              <ActivityIndicator size={14} color="#E8A33D" />
+                              <ActivityIndicator size={14} color={t.accent} />
                             ) : (
                               <Trash2 size={15} color="#B84D4D" strokeWidth={2.5} />
                             )}
@@ -1244,12 +1299,12 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     <TarjetaDato
                       label="Recaudado"
                       valor={`S/ ${reporteQuery.data.totalIngresos.toFixed(2)}`}
-                      color="text-[#4D7C4D]"
+                      color={t.success}
                     />
                     <TarjetaDato
                       label="Ventas cerradas"
                       valor={`${reporteQuery.data.numSales}`}
-                      color="text-[#F7F2E9]"
+                      color={t.textPrimary}
                     />
                   </View>
                   <View className="flex-row gap-3 mb-3">
@@ -1257,62 +1312,67 @@ className="bg-[#4D2B2B]/40 rounded-full"
                       label={
                         <View className="flex-row items-center gap-1.5">
                           <Smartphone size={13} color="#B79BE8" strokeWidth={2.5} />
-                          <Text className="text-[#8C7F6E] text-xs">Yape</Text>
+                          <Text className="text-xs" style={{ color: t.textSecondary }}>Yape</Text>
                         </View>
                       }
                       valor={`S/ ${(salesYape(reporteQuery.data.sales) + manualesYape).toFixed(2)}`}
-                      color="text-[#B79BE8]"
+                      color="#B79BE8"
                     />
                     <TarjetaDato
                       label={
                         <View className="flex-row items-center gap-1.5">
                           <Banknote size={13} color="#7FB37F" strokeWidth={2.5} />
-                          <Text className="text-[#8C7F6E] text-xs">Efectivo</Text>
+                          <Text className="text-xs" style={{ color: t.textSecondary }}>Efectivo</Text>
                         </View>
                       }
                       valor={`S/ ${(salesEfectivo(reporteQuery.data.sales) + manualesEfectivo).toFixed(2)}`}
-                      color="text-[#7FB37F]"
+                      color="#7FB37F"
                     />
                   </View>
                   <View className="flex-row gap-3 mb-5">
                     <TarjetaDato
                       label="Comandas"
                       valor={`${reporteQuery.data.numComandas}`}
-                      color="text-[#F7F2E9]"
+                      color={t.textPrimary}
                     />
                     <TarjetaDato
                       label="Ticket promedio"
                       valor={`S/ ${reporteQuery.data.ticketPromedio.toFixed(2)}`}
-                      color="text-[#E8A33D]"
+                      color={t.accent}
                     />
                   </View>
                 </>
               }
               renderSectionHeader={({ section }) =>
                 section.grupo ? (
-                  <View className="flex-row items-center justify-between rounded-2xl border border-[#3A322B] bg-[#2B2420] px-4 py-3">
+                  <View
+                    className={`rounded-2xl px-4 py-3 ${
+                      temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                    }`}
+                    style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+                  >
                     <View className="flex-row items-center gap-2 flex-1">
                       {typeof section.title === 'string' ? (
-                        <Text className="text-[#F7F2E9] font-extrabold text-base">{section.title}</Text>
+                        <Text className="font-extrabold text-base" style={{ color: t.textPrimary }}>{section.title}</Text>
                       ) : (
                         section.title
                       )}
                       {section.pendientes ? (
-                        <View className="bg-[#E8A33D]/20 rounded-full px-2 py-0.5">
-                          <Text className="text-[#E8A33D] text-[11px] font-bold">
+                        <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: alpha(t.accent, 20) }}>
+                          <Text className="text-[11px] font-bold" style={{ color: t.accent }}>
                             {section.pendientes} por cobrar
                           </Text>
                         </View>
                       ) : null}
                     </View>
                     {section.subtotal !== undefined && (
-                      <Text className="text-[#8C7F6E] text-sm font-bold">
+                      <Text className="text-sm font-bold" style={{ color: t.textSecondary }}>
                         {section.data.length} pedidos · S/ {section.subtotal.toFixed(2)}
                       </Text>
                     )}
                   </View>
                 ) : (
-                  <Text className="text-[#F7F2E9] font-extrabold text-lg">{section.title}</Text>
+                  <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>{section.title}</Text>
                 )
               }
               renderItem={({ item }) => (
@@ -1324,42 +1384,42 @@ className="bg-[#4D2B2B]/40 rounded-full"
                 >
                   <View className="flex-1">
                     <View className="flex-row items-center gap-2">
-                      <Text className="text-[#F7F2E9] font-bold text-sm">{item.hora}</Text>
+                      <Text className="font-bold text-sm" style={{ color: t.textPrimary }}>{item.hora}</Text>
                       {item.tapero > 0 && (
-                        <View className="bg-[#1E1A17] rounded-full px-2 py-0.5 flex-row items-center gap-1">
-                          <ShoppingBag size={11} color="#E8A33D" strokeWidth={2.5} />
-                          <Text className="text-xs font-semibold text-[#E8A33D]">
-                            tapero +S/ {item.tapero.toFixed(2)}
+                        <View className="rounded-full px-2 py-0.5 flex-row items-center gap-1" style={{ backgroundColor: t.chip }}>
+                          <ShoppingBag size={11} color={t.accent} strokeWidth={2.5} />
+                          <Text className="text-xs font-semibold" style={{ color: t.accent }}>
+                            taper +S/ {item.tapero.toFixed(2)}
                           </Text>
                         </View>
                       )}
                       {item.fiado ? (
-                        <View className="rounded-full bg-[#E8A33D]/20 px-2 py-0.5 flex-row items-center gap-1">
-                          <Hourglass size={11} color="#E8A33D" strokeWidth={2.5} />
-                          <Text className="text-[10px] font-bold text-[#E8A33D]">fiado</Text>
+                        <View className="rounded-full px-2 py-0.5 flex-row items-center gap-1" style={{ backgroundColor: alpha(t.accent, 20) }}>
+                          <Hourglass size={11} color={t.accent} strokeWidth={2.5} />
+                          <Text className="text-[10px] font-bold" style={{ color: t.accent }}>fiado</Text>
                         </View>
                       ) : item.metodo === 'YAPE' ? (
-                        <View className="rounded-full bg-[#6C4FBF]/25 px-2 py-0.5 flex-row items-center gap-1">
+                        <View className="rounded-full px-2 py-0.5 flex-row items-center gap-1" style={{ backgroundColor: alpha(t.yape, 25) }}>
                           <Smartphone size={11} color="#B79BE8" strokeWidth={2.5} />
                           <Text className="text-[10px] font-bold text-[#B79BE8]">Yape</Text>
                         </View>
                       ) : item.metodo === 'EFECTIVO' ? (
-                        <View className="rounded-full bg-[#4D7C4D]/20 px-2 py-0.5 flex-row items-center gap-1">
+                        <View className="rounded-full px-2 py-0.5 flex-row items-center gap-1" style={{ backgroundColor: alpha(t.success, 20) }}>
                           <Banknote size={11} color="#7FB37F" strokeWidth={2.5} />
                           <Text className="text-[10px] font-bold text-[#7FB37F]">Efectivo</Text>
                         </View>
                       ) : (
-                        <View className="rounded-full bg-[#4D7C4D]/20 px-2 py-0.5 flex-row items-center gap-1">
+                        <View className="rounded-full px-2 py-0.5 flex-row items-center gap-1" style={{ backgroundColor: alpha(t.success, 20) }}>
                           <Check size={11} color="#7FB37F" strokeWidth={2.5} />
                           <Text className="text-[10px] font-bold text-[#7FB37F]">cobrado</Text>
                         </View>
                       )}
                     </View>
-                    <Text className="text-[#8C7F6E] text-xs mt-0.5">
+                    <Text className="text-xs mt-0.5" style={{ color: t.textSecondary }}>
                       {item.nComandas} comanda{item.nComandas === 1 ? '' : 's'} · toca para ver el detalle
                     </Text>
                   </View>
-                  <Text className="text-[#4D7C4D] font-extrabold">S/ {item.total.toFixed(2)}</Text>
+                  <Text className="font-extrabold" style={{ color: t.success }}>S/ {item.total.toFixed(2)}</Text>
                 </ScalePressable>
               )}
             />
@@ -1387,9 +1447,11 @@ className="bg-[#4D2B2B]/40 rounded-full"
           <View className="flex-1 items-center justify-center bg-black/50 px-6">
             <Animated.View
               entering={FadeInDown.duration(200)}
-              className="bg-[#2B2420] rounded-2xl border border-[#3A322B] p-5 w-full max-w-sm"
+              className={`rounded-2xl p-5 w-full max-w-sm ${
+              temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+            }`} style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
             >
-              <Text className="text-[#F7F2E9] font-bold text-lg mb-4 text-center">Elegir fecha</Text>
+              <Text className="font-bold text-lg mb-4 text-center" style={{ color: t.textPrimary }}>Elegir fecha</Text>
               <DateTimePicker
                 value={fechaCalendario}
                 mode="date"
@@ -1402,10 +1464,10 @@ className="bg-[#4D2B2B]/40 rounded-full"
               <View className="flex-row gap-3 mt-4">
                 <ScalePressable
                   onPress={() => setPickerAbierto(false)}
-                  className="flex-1 bg-[#1E1A17] rounded-full items-center"
+                  className="flex-1 rounded-full items-center" style={{ backgroundColor: t.chip }}
                   innerClassName="w-full py-3 items-center justify-center"
                 >
-                  <Text className="text-[#8C7F6E] font-semibold">Cancelar</Text>
+                  <Text className="font-semibold" style={{ color: t.textSecondary }}>Cancelar</Text>
                 </ScalePressable>
                 <ScalePressable
                   onPress={() => {
@@ -1413,10 +1475,10 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     hapticSuccess();
                     setPickerAbierto(false);
                   }}
-                  className="flex-1 bg-[#D4432B] rounded-full items-center"
+                  className="flex-1 rounded-full items-center" style={{ backgroundColor: t.primary }}
                   innerClassName="w-full py-3 items-center justify-center"
                 >
-                  <Text className="text-[#F7F2E9] font-semibold">Listo</Text>
+                  <Text className="font-semibold" style={{ color: t.onPrimary }}>Listo</Text>
                 </ScalePressable>
               </View>
             </Animated.View>
@@ -1431,46 +1493,50 @@ className="bg-[#4D2B2B]/40 rounded-full"
         onRequestClose={cerrarCobroModal}
       >
         <Pressable className="flex-1" onPress={cerrarCobroModal}>
-          <Animated.View entering={FadeIn.duration(180)} className="flex-1 bg-[#130F0C]/70" />
+          <Animated.View entering={FadeIn.duration(180)} className="flex-1" style={{ backgroundColor: alpha(t.overlay, 70) }} />
         </Pressable>
         <Animated.View
           entering={FadeInDown.springify().damping(17).stiffness(180)}
-          className="absolute bottom-0 inset-x-0 bg-[#2B2420] rounded-t-3xl border-t border-[#3A322B] px-6 pt-5 pb-8"
+          className={`absolute bottom-0 inset-x-0 rounded-t-3xl px-6 pt-5 pb-8 ${
+            temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
+          }`} style={{ backgroundColor: t.surfaceElevated, borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
         >
-          <Text className="text-[#F7F2E9] font-extrabold text-lg text-center">
+          <Text className="font-extrabold text-lg text-center" style={{ color: t.textPrimary }}>
             Cobrar · {cobroModal?.nombre}
           </Text>
-          <Text className="text-[#4D7C4D] font-extrabold text-center mt-1 text-2xl">
+          <Text className="font-extrabold text-center mt-1 text-2xl" style={{ color: t.success }}>
             S/ {(cobroModal?.monto ?? 0).toFixed(2)}
           </Text>
-          <Text className="text-[#8C7F6E] text-xs text-center mt-1.5">
+          <Text className="text-xs text-center mt-1.5" style={{ color: t.textSecondary }}>
             El cobro se contabiliza el día en que se anotó el fiado
           </Text>
           {errorCobro !== '' && (
-            <Text className="text-[#D4432B] text-xs text-center mt-2">{errorCobro}</Text>
+            <Text className="text-xs text-center mt-2" style={{ color: t.primary }}>{errorCobro}</Text>
           )}
           <View className="flex-row gap-3 mt-5">
             <Pressable
               onPress={() => ejecutarCobro('YAPE')}
-              className="flex-1 bg-[#6C4FBF] rounded-full py-3.5 items-center"
-            >
+className="flex-1 rounded-full py-3.5 items-center"
+            style={{ backgroundColor: t.yape }}
+          >
               <View className="flex-row items-center gap-1.5">
-              <Smartphone size={14} color="#F7F2E9" strokeWidth={2.5} />
-              <Text className="text-[#F7F2E9] font-bold">Yape</Text>
+              <Smartphone size={14} color={t.onPrimary} strokeWidth={2.5} />
+              <Text className="font-bold" style={{ color: t.onPrimary }}>Yape</Text>
             </View>
             </Pressable>
             <Pressable
               onPress={() => ejecutarCobro('EFECTIVO')}
-              className="flex-1 bg-[#4D7C4D] rounded-full py-3.5 items-center"
-            >
+className="flex-1 rounded-full py-3.5 items-center"
+            style={{ backgroundColor: t.success }}
+          >
               <View className="flex-row items-center gap-1.5">
-                <Banknote size={14} color="#F7F2E9" strokeWidth={2.5} />
-                <Text className="text-[#F7F2E9] font-bold">Efectivo</Text>
+                <Banknote size={14} color={t.onPrimary} strokeWidth={2.5} />
+                <Text className="font-bold" style={{ color: t.onPrimary }}>Efectivo</Text>
               </View>
             </Pressable>
           </View>
           <Pressable onPress={cerrarCobroModal} className="mt-3 items-center">
-            <Text className="text-[#8C7F6E] font-semibold text-sm">Cancelar</Text>
+            <Text className="font-semibold text-sm" style={{ color: t.textSecondary }}>Cancelar</Text>
           </Pressable>
         </Animated.View>
       </Modal>
@@ -1488,32 +1554,35 @@ className="bg-[#4D2B2B]/40 rounded-full"
           <Pressable className="flex-1 bg-black/50" onPress={() => setModalManual(false)} />
           <Animated.View
             entering={FadeInDown.springify().damping(17).stiffness(180)}
-            className="bg-[#2B2420] rounded-t-3xl border-t border-[#3A322B] px-6 pt-5 pb-8"
+            className={`rounded-t-3xl px-6 pt-5 pb-8 ${
+            temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
+          }`} style={{ backgroundColor: t.surfaceElevated, borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
           >
-            <Text className="text-[#F7F2E9] font-extrabold text-lg text-center mb-4">
+            <Text className="font-extrabold text-lg text-center mb-4" style={{ color: t.textPrimary }}>
               ＋ Agregar manualmente
             </Text>
 
-            <View className="flex-row bg-[#1E1A17] rounded-full p-1 mb-4">
-              {(['FIADO', 'INGRESO'] as const).map((t) => {
-                const activo = tipoManual === t;
+            <View className="flex-row rounded-full p-1 mb-4" style={{ backgroundColor: t.chip }}>
+              {(['FIADO', 'INGRESO'] as const).map((tipo) => {
+                const activo = tipoManual === tipo;
                 return (
                   <Pressable
-                    key={t}
+                    key={tipo}
                     onPress={() => {
                       hapticImpact();
-                      setTipoManual(t);
+                      setTipoManual(tipo);
                     }}
-                    className={`flex-1 py-2 rounded-full items-center ${activo ? 'bg-[#6C4FBF]' : ''}`}
+                    className="flex-1 py-2 rounded-full items-center"
+                    style={activo ? { backgroundColor: t.yape } : undefined}
                   >
                     <View className="flex-row items-center gap-1.5">
-                    {t === 'FIADO' ? (
-                      <Hourglass size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                    {tipo === 'FIADO' ? (
+                      <Hourglass size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                     ) : (
-                      <NotebookText size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                      <NotebookText size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                     )}
-                    <Text className={`font-bold text-xs ${activo ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
-                      {t === 'FIADO' ? 'Fiado' : 'Cuadre del día'}
+                    <Text className="font-bold text-xs" style={{ color: activo ? t.onPrimary : t.textSecondary }}>
+                      {tipo === 'FIADO' ? 'Fiado' : 'Cuadre del día'}
                     </Text>
                   </View>
                   </Pressable>
@@ -1521,7 +1590,7 @@ className="bg-[#4D2B2B]/40 rounded-full"
               })}
             </View>
 
-            <Text className="text-[#8C7F6E] text-sm mb-1">Canal</Text>
+            <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Canal</Text>
             <View className="flex-row gap-2 mb-4">
               {([
                 { valor: 'mesa', texto: 'Mesa' },
@@ -1535,15 +1604,15 @@ className="bg-[#4D2B2B]/40 rounded-full"
                       hapticImpact();
                       setCanalManual(c.valor);
                     }}
-                    className={`flex-1 rounded-full py-2.5 items-center ${activo ? 'bg-[#6C4FBF]' : 'bg-[#1E1A17]'}`}
+                    className="flex-1 rounded-full py-2.5 items-center" style={activo ? { backgroundColor: t.yape } : { backgroundColor: t.chip }}
                   >
                     <View className="flex-row items-center gap-1.5">
                       {c.valor === 'mesa' ? (
-                        <Utensils size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                        <Utensils size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                       ) : (
-                        <Truck size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                        <Truck size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                       )}
-                      <Text className={`text-xs font-bold ${activo ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
+                      <Text className="font-bold text-xs" style={{ color: activo ? t.onPrimary : t.textSecondary }}>
                         {c.texto}
                       </Text>
                     </View>
@@ -1552,11 +1621,11 @@ className="bg-[#4D2B2B]/40 rounded-full"
               })}
             </View>
 
-            <Text className="text-[#8C7F6E] text-sm mb-1">Monto (S/)</Text>
+            <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Monto (S/)</Text>
             <TextInput
-              className="bg-[#1E1A17] rounded-lg text-[#F7F2E9] text-base px-4 py-3 mb-4"
+              className="rounded-lg text-base px-4 py-3 mb-4" style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
               placeholder="0.00"
-              placeholderTextColor={COLOR.placeholder}
+              placeholderTextColor={t.placeholder}
               keyboardType="decimal-pad"
               value={montoManual}
               onChangeText={setMontoManual}
@@ -1564,18 +1633,18 @@ className="bg-[#4D2B2B]/40 rounded-full"
 
             {tipoManual === 'FIADO' ? (
               <>
-                <Text className="text-[#8C7F6E] text-sm mb-1">Cliente</Text>
+                <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Cliente</Text>
                 <TextInput
-                  className="bg-[#1E1A17] rounded-lg text-[#F7F2E9] text-base px-4 py-3 mb-4"
+                  className="rounded-lg text-base px-4 py-3 mb-4" style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
                   placeholder="Nombre del cliente"
-                  placeholderTextColor={COLOR.placeholder}
+                  placeholderTextColor={t.placeholder}
                   value={clienteManual}
                   onChangeText={setClienteManual}
                 />
               </>
             ) : (
               <>
-                <Text className="text-[#8C7F6E] text-sm mb-1">Método de pago</Text>
+                <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Método de pago</Text>
                 <View className="flex-row gap-2 mb-4">
                   {(['YAPE', 'EFECTIVO'] as const).map((m) => {
                     const activo = metodoManual === m;
@@ -1586,21 +1655,22 @@ className="bg-[#4D2B2B]/40 rounded-full"
                           hapticImpact();
                           setMetodoManual(m);
                         }}
-                        className={`flex-1 rounded-full py-2.5 items-center ${
+                        className="flex-1 rounded-full py-2.5 items-center"
+                        style={
                           activo
                             ? m === 'YAPE'
-                              ? 'bg-[#6C4FBF]'
-                              : 'bg-[#4D7C4D]'
-                            : 'bg-[#1E1A17]'
-                        }`}
+                              ? { backgroundColor: t.yape }
+                              : { backgroundColor: t.success }
+                            : { backgroundColor: t.chip }
+                        }
                       >
                         <View className="flex-row items-center gap-1.5">
                           {m === 'YAPE' ? (
-                            <Smartphone size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                            <Smartphone size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                           ) : (
-                            <Banknote size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                            <Banknote size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                           )}
-                          <Text className={`text-xs font-bold ${activo ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
+                          <Text className="font-bold text-xs" style={{ color: activo ? t.onPrimary : t.textSecondary }}>
                             {m === 'YAPE' ? 'Yape' : 'Efectivo'}
                           </Text>
                         </View>
@@ -1609,16 +1679,16 @@ className="bg-[#4D2B2B]/40 rounded-full"
                   })}
                 </View>
 
-                <Text className="text-[#8C7F6E] text-sm mb-1">Concepto</Text>
+                <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Concepto</Text>
                 <TextInput
-                  className="bg-[#1E1A17] rounded-lg text-[#F7F2E9] text-base px-4 py-3 mb-4"
+                  className="rounded-lg text-base px-4 py-3 mb-4" style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
                   placeholder="Ej. propina, cuadre de caja"
-                  placeholderTextColor={COLOR.placeholder}
+                  placeholderTextColor={t.placeholder}
                   value={conceptoManual}
                   onChangeText={setConceptoManual}
                 />
 
-                <Text className="text-[#8C7F6E] text-sm mb-1">Fecha del cuadre</Text>
+                <Text className="text-sm mb-1" style={{ color: t.textSecondary }}>Fecha del cuadre</Text>
                 <Pressable
                   onPress={() => {
                     hapticImpact();
@@ -1626,32 +1696,33 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     setFechaCalendarioManual(new Date(y, m - 1, d));
                     setPickerManualAbierto(true);
                   }}
-                  className="bg-[#1E1A17] rounded-lg px-4 py-3 mb-4 flex-row items-center justify-between"
+                  className="rounded-lg px-4 py-3 mb-4 flex-row items-center justify-between" style={{ backgroundColor: t.inputBg }}
                 >
-                  <Text className="text-[#F7F2E9] text-base">{fechaCortaDia(fechaManual)}</Text>
-                  <Text className="text-[#8C7F6E] text-xs font-bold">Toca para cambiar</Text>
+                  <Text className="text-base" style={{ color: t.textPrimary }}>{fechaCortaDia(fechaManual)}</Text>
+                  <Text className="text-xs font-bold" style={{ color: t.textSecondary }}>Toca para cambiar</Text>
                 </Pressable>
               </>
             )}
 
             {errorManual !== '' && (
-              <Text className="text-[#D4432B] text-sm mb-3">{errorManual}</Text>
+              <Text className="text-sm mb-3" style={{ color: t.primary }}>{errorManual}</Text>
             )}
 
             <ScalePressable
               onPress={guardarRegistroManual}
               disabled={guardandoManual}
-              className={`rounded-full items-center ${guardandoManual ? 'bg-[#3A322B]' : 'bg-[#6C4FBF]'}`}
+              className="rounded-full items-center"
+              style={guardandoManual ? { backgroundColor: t.border } : { backgroundColor: t.yape }}
               innerClassName="w-full py-4 items-center justify-center"
             >
               {guardandoManual ? (
-                <ActivityIndicator color="#F7F2E9" size="small" />
+                <ActivityIndicator color={t.onPrimary} size="small" />
               ) : (
-                <Text className="text-[#F7F2E9] font-bold text-base">Guardar</Text>
+                <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Guardar</Text>
               )}
             </ScalePressable>
             <Pressable onPress={() => setModalManual(false)} className="mt-3 items-center">
-              <Text className="text-[#8C7F6E] font-semibold text-sm">Cancelar</Text>
+              <Text className="font-semibold text-sm" style={{ color: t.textSecondary }}>Cancelar</Text>
             </Pressable>
           </Animated.View>
         </KeyboardAvoidingView>
@@ -1677,9 +1748,11 @@ className="bg-[#4D2B2B]/40 rounded-full"
           <View className="flex-1 items-center justify-center bg-black/50 px-6">
             <Animated.View
               entering={FadeInDown.duration(200)}
-              className="bg-[#2B2420] rounded-2xl border border-[#3A322B] p-5 w-full max-w-sm"
+              className={`rounded-2xl p-5 w-full max-w-sm ${
+              temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+            }`} style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
             >
-              <Text className="text-[#F7F2E9] font-bold text-lg mb-4 text-center">Elegir fecha del cuadre</Text>
+              <Text className="font-bold text-lg mb-4 text-center" style={{ color: t.textPrimary }}>Elegir fecha del cuadre</Text>
               <DateTimePicker
                 value={fechaCalendarioManual}
                 mode="date"
@@ -1692,10 +1765,10 @@ className="bg-[#4D2B2B]/40 rounded-full"
               <View className="flex-row gap-3 mt-4">
                 <ScalePressable
                   onPress={() => setPickerManualAbierto(false)}
-                  className="flex-1 bg-[#1E1A17] rounded-full items-center"
+                  className="flex-1 rounded-full items-center" style={{ backgroundColor: t.chip }}
                   innerClassName="w-full py-3 items-center justify-center"
                 >
-                  <Text className="text-[#8C7F6E] font-semibold">Cancelar</Text>
+                  <Text className="font-semibold" style={{ color: t.textSecondary }}>Cancelar</Text>
                 </ScalePressable>
                 <ScalePressable
                   onPress={() => {
@@ -1703,10 +1776,10 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     hapticSuccess();
                     setPickerManualAbierto(false);
                   }}
-                  className="flex-1 bg-[#D4432B] rounded-full items-center"
+                  className="flex-1 rounded-full items-center" style={{ backgroundColor: t.primary }}
                   innerClassName="w-full py-3 items-center justify-center"
                 >
-                  <Text className="text-[#F7F2E9] font-semibold">Listo</Text>
+                  <Text className="font-semibold" style={{ color: t.onPrimary }}>Listo</Text>
                 </ScalePressable>
               </View>
             </Animated.View>
@@ -1721,11 +1794,13 @@ className="bg-[#4D2B2B]/40 rounded-full"
         onRequestClose={cerrarDetalleVenta}
       >
         <Pressable className="flex-1" onPress={cerrarDetalleVenta}>
-          <Animated.View entering={FadeIn.duration(180)} className="flex-1 bg-[#130F0C]/70" />
+          <Animated.View entering={FadeIn.duration(180)} className="flex-1" style={{ backgroundColor: alpha(t.overlay, 70) }} />
         </Pressable>
         <Animated.View
           entering={FadeInDown.springify().damping(17).stiffness(180)}
-          className="absolute bottom-0 inset-x-0 bg-[#2B2420] rounded-t-3xl border-t border-[#3A322B] px-6 pt-5 pb-8"
+          className={`absolute bottom-0 inset-x-0 rounded-t-3xl px-6 pt-5 pb-8 ${
+            temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
+          }`} style={{ backgroundColor: t.surfaceElevated, borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
         >
           {detalleVenta && (() => {
             const venta = detalleVenta;
@@ -1739,39 +1814,39 @@ className="bg-[#4D2B2B]/40 rounded-full"
             return (
               <>
                 <View className="flex-row items-center justify-between mb-3">
-                  <Text className="text-[#F7F2E9] font-extrabold text-lg flex-shrink">
+                  <Text className="font-extrabold text-lg flex-shrink" style={{ color: t.textPrimary }}>
                     {titulo}
                   </Text>
-                  <Text className="text-[#8C7F6E] text-sm">{horaLima(venta.completedAt)}</Text>
+                  <Text className="text-sm" style={{ color: t.textSecondary }}>{horaLima(venta.completedAt)}</Text>
                 </View>
 
                 <View className="flex-row flex-wrap items-center gap-1.5 mb-4">
                   {venta.pagoEstado === 'PENDIENTE' ? (
-                    <View className="rounded-full bg-[#E8A33D]/20 px-2.5 py-1 flex-row items-center gap-1">
-                      <Hourglass size={11} color="#E8A33D" strokeWidth={2.5} />
-                      <Text className="text-[11px] font-bold text-[#E8A33D]">fiado</Text>
+                    <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1" style={{ backgroundColor: alpha(t.accent, 20) }}>
+                      <Hourglass size={11} color={t.accent} strokeWidth={2.5} />
+                      <Text className="text-[11px] font-bold" style={{ color: t.accent }}>fiado</Text>
                     </View>
                   ) : venta.metodoPago === 'YAPE' ? (
-                    <View className="rounded-full bg-[#6C4FBF]/25 px-2.5 py-1 flex-row items-center gap-1">
+                    <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1" style={{ backgroundColor: alpha(t.yape, 25) }}>
                       <Smartphone size={11} color="#B79BE8" strokeWidth={2.5} />
                       <Text className="text-[11px] font-bold text-[#B79BE8]">Yape</Text>
                     </View>
                   ) : venta.metodoPago === 'EFECTIVO' ? (
-                    <View className="rounded-full bg-[#4D7C4D]/20 px-2.5 py-1 flex-row items-center gap-1">
+                    <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1" style={{ backgroundColor: alpha(t.success, 20) }}>
                       <Banknote size={11} color="#7FB37F" strokeWidth={2.5} />
                       <Text className="text-[11px] font-bold text-[#7FB37F]">Efectivo</Text>
                     </View>
                   ) : (
-                    <View className="rounded-full bg-[#4D7C4D]/20 px-2.5 py-1 flex-row items-center gap-1">
+                    <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1" style={{ backgroundColor: alpha(t.success, 20) }}>
                       <Check size={11} color="#7FB37F" strokeWidth={2.5} />
                       <Text className="text-[11px] font-bold text-[#7FB37F]">cobrado</Text>
                     </View>
                   )}
                   {tapero > 0 && (
-                    <View className="bg-[#1E1A17] rounded-full px-2.5 py-1 flex-row items-center gap-1">
-                      <ShoppingBag size={11} color="#E8A33D" strokeWidth={2.5} />
-                      <Text className="text-[11px] font-semibold text-[#E8A33D]">
-                        tapero +S/ {tapero.toFixed(2)}
+                    <View className="rounded-full px-2.5 py-1 flex-row items-center gap-1" style={{ backgroundColor: t.chip }}>
+                      <ShoppingBag size={11} color={t.accent} strokeWidth={2.5} />
+                      <Text className="text-[11px] font-semibold" style={{ color: t.accent }}>
+                        taper +S/ {tapero.toFixed(2)}
                       </Text>
                     </View>
                   )}
@@ -1781,10 +1856,13 @@ className="bg-[#4D2B2B]/40 rounded-full"
                   {venta.orders.map((orden, idx) => (
                     <View
                       key={orden.orderId}
-                      className="border border-[#3A322B] rounded-2xl px-4 py-3 mb-3"
+                      className={`rounded-2xl px-4 py-3 mb-3 ${
+                        temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                      }`}
+                      style={{ borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
                     >
                       <View className="flex-row items-center justify-between mb-1.5">
-                        <Text className="text-[#F7F2E9] font-bold text-sm">
+                        <Text className="font-bold text-sm" style={{ color: t.textPrimary }}>
                           {venta.orders.length > 1 ? `Comanda ${idx + 1}` : 'Comanda'}
                           {orden.edited ? ' · editada' : ''}
                         </Text>
@@ -1798,43 +1876,45 @@ className="bg-[#4D2B2B]/40 rounded-full"
                           }}
                           pressedScale={0.9}
                           hitSlop={6}
-                          className="w-8 h-8 rounded-full items-center justify-center border border-[#3A322B] bg-[#1E1A17]"
+                          className={`w-8 h-8 rounded-full items-center justify-center ${
+                          temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                        }`}
+                          style={{ borderColor: temaId === 'claro' ? '#1E1A17' : t.border, backgroundColor: t.chip }}
                           innerClassName="flex-1 w-full h-full items-center justify-center"
                         >
                           <Trash2
                             size={14}
-                            color={eliminarConfirm === orden.orderId ? '#D4432B' : '#8C7F6E'}
+                            color={eliminarConfirm === orden.orderId ? t.primary : t.textSecondary}
                             strokeWidth={2.5}
                           />
                         </ScalePressable>
                       </View>
 
                       {eliminarConfirm === orden.orderId && (
-                        <View className="bg-[#D4432B]/15 border border-[#D4432B]/40 rounded-xl px-3 py-2.5 mb-2">
-                          <Text className="text-[#F7F2E9] text-xs font-bold mb-2">
+                        <View className="border rounded-xl px-3 py-2.5 mb-2" style={{ backgroundColor: alpha(t.primary, 15), borderColor: alpha(t.primary, 40) }}>
+                          <Text className="text-xs font-bold mb-2" style={{ color: t.textPrimary }}>
                             ¿Eliminar esta comanda del reporte? Se quitará de las ventas y totales.
                           </Text>
                           <View className="flex-row gap-2">
                             <ScalePressable
                               onPress={() => ejecutarEliminarComanda(orden.orderId)}
                               disabled={eliminando === orden.orderId}
-                              className={`flex-1 rounded-full items-center ${
-                                eliminando === orden.orderId ? 'bg-[#3A322B]' : 'bg-[#D4432B]'
-                              }`}
+                              className="flex-1 rounded-full items-center"
+                              style={eliminando === orden.orderId ? { backgroundColor: t.border } : { backgroundColor: t.primary }}
                               innerClassName="w-full py-2 items-center justify-center"
                             >
                               {eliminando === orden.orderId ? (
-                                <ActivityIndicator color="#F7F2E9" size="small" />
+                                <ActivityIndicator color={t.onPrimary} size="small" />
                               ) : (
-                                <Text className="text-[#F7F2E9] font-bold text-xs">Eliminar</Text>
+                                <Text className="font-bold text-xs" style={{ color: t.onPrimary }}>Eliminar</Text>
                               )}
                             </ScalePressable>
                             <ScalePressable
                               onPress={() => setEliminarConfirm(null)}
-                              className="flex-1 bg-[#1E1A17] rounded-full items-center"
+                              className="flex-1 rounded-full items-center" style={{ backgroundColor: t.chip }}
                               innerClassName="w-full py-2 items-center justify-center"
                             >
-                              <Text className="text-[#8C7F6E] font-semibold text-xs">Cancelar</Text>
+                              <Text className="font-semibold text-xs" style={{ color: t.textSecondary }}>Cancelar</Text>
                             </ScalePressable>
                           </View>
                         </View>
@@ -1843,36 +1923,36 @@ className="bg-[#4D2B2B]/40 rounded-full"
                       {orden.items.map((item, i) => (
                         <View key={i} className="flex-row items-start justify-between py-1.5">
                           <View className="flex-1 flex-row items-start gap-2 pr-2">
-                            <Text className="text-[#8C7F6E] text-xs font-bold mt-0.5">
+                            <Text className="text-xs font-bold mt-0.5" style={{ color: t.textSecondary }}>
                               {item.quantity}x
                             </Text>
                             <View className="flex-1">
                               <View className="flex-row items-center flex-wrap gap-1.5">
-                                <Text className="text-[#F7F2E9] text-sm font-semibold">
+                                <Text className="text-sm font-semibold" style={{ color: t.textPrimary }}>
                                   {item.name}
                                 </Text>
                                 {item.esExtra && (
-                                  <View className="rounded-full bg-[#6C4FBF]/30 px-2 py-0.5">
-                                    <Text className="text-[9px] font-extrabold text-[#B79BE8]">
+                                  <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: alpha(t.yape, 30) }}>
+                                    <Text className="text-[9px] font-extrabold" style={{ color: '#B79BE8' }}>
                                       extra
                                     </Text>
                                   </View>
                                 )}
                                 {item.paraLlevar && (
-                                  <View className="rounded-full bg-[#E8A33D]/20 px-2 py-0.5">
-                                    <Text className="text-[9px] font-bold text-[#E8A33D]">
-                                      tapero +S/ {(item.taperoPrecio ?? 1).toFixed(2)}
+                                  <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: alpha(t.accent, 20) }}>
+                                    <Text className="text-[9px] font-bold" style={{ color: t.accent }}>
+                                      taper +S/ {(item.taperoPrecio ?? 1).toFixed(2)}
                                     </Text>
                                   </View>
                                 )}
                               </View>
                               {item.entrada && (
-                                <Text className="text-[#8C7F6E] text-xs mt-0.5">
+                                <Text className="text-xs mt-0.5" style={{ color: t.textSecondary }}>
                                   + {item.entrada.name} (S/ {item.entrada.price.toFixed(2)})
                                 </Text>
                               )}
                               {item.entradaPersonalizada && (
-                                <Text className="text-[#8C7F6E] text-xs mt-0.5">
+                                <Text className="text-xs mt-0.5" style={{ color: t.textSecondary }}>
                                   + {item.entradaPersonalizada.name} (S/ {item.entradaPersonalizada.price.toFixed(2)})
                                 </Text>
                               )}
@@ -1883,32 +1963,36 @@ className="bg-[#4D2B2B]/40 rounded-full"
                               ) : null}
                             </View>
                           </View>
-                          <Text className="text-[#F7F2E9] font-bold text-sm">
+                          <Text className="font-bold text-sm" style={{ color: t.textPrimary }}>
                             S/ {totalItemFila(item).toFixed(2)}
                           </Text>
                         </View>
                       ))}
 
-                      <View className="border-t border-[#3A322B] mt-1.5 pt-2 flex-row items-center justify-between">
-                        <Text className="text-[#8C7F6E] text-xs font-bold">Subtotal comanda</Text>
-                        <Text className="text-[#E8A33D] font-extrabold">S/ {orden.total.toFixed(2)}</Text>
+                      <View className={`mt-1.5 pt-2 flex-row items-center justify-between ${
+                        temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
+                      }`} style={{ borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}>
+                        <Text className="text-xs font-bold" style={{ color: t.textSecondary }}>Subtotal comanda</Text>
+                        <Text className="font-extrabold" style={{ color: t.accent }}>S/ {orden.total.toFixed(2)}</Text>
                       </View>
                     </View>
                   ))}
                 </ScrollView>
 
                 {errorEliminar !== '' && (
-                  <Text className="text-[#D4432B] text-xs text-center mt-3">{errorEliminar}</Text>
+                  <Text className="text-xs text-center mt-3" style={{ color: t.primary }}>{errorEliminar}</Text>
                 )}
 
-                <View className="border-t border-[#3A322B] pt-3 mt-1 flex-row items-center justify-between">
-                  <Text className="text-[#F7F2E9] font-extrabold text-sm">Total</Text>
-                  <Text className="text-[#4D7C4D] font-extrabold text-xl">
+                <View className={`pt-3 mt-1 flex-row items-center justify-between ${
+                    temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
+                  }`} style={{ borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}>
+                  <Text className="font-extrabold text-sm" style={{ color: t.textPrimary }}>Total</Text>
+                  <Text className="font-extrabold text-xl" style={{ color: t.success }}>
                     S/ {venta.total.toFixed(2)}
                   </Text>
                 </View>
                 <Pressable onPress={cerrarDetalleVenta} className="mt-4 items-center">
-                  <Text className="text-[#8C7F6E] font-semibold text-sm">Cerrar</Text>
+                  <Text className="font-semibold text-sm" style={{ color: t.textSecondary }}>Cerrar</Text>
                 </Pressable>
               </>
             );
@@ -1923,18 +2007,20 @@ className="bg-[#4D2B2B]/40 rounded-full"
         onRequestClose={() => setFiltroPanelAbierto(false)}
       >
         <Pressable className="flex-1" onPress={() => setFiltroPanelAbierto(false)}>
-          <Animated.View entering={FadeIn.duration(180)} className="flex-1 bg-[#130F0C]/70" />
+          <Animated.View entering={FadeIn.duration(180)} className="flex-1" style={{ backgroundColor: alpha(t.overlay, 70) }} />
         </Pressable>
         <Animated.View
           entering={FadeInDown.springify().damping(17).stiffness(180)}
-          className="absolute bottom-0 inset-x-0 bg-[#2B2420] rounded-t-3xl border-t border-[#3A322B] px-6 pt-5 pb-8"
+          className={`absolute bottom-0 inset-x-0 rounded-t-3xl px-6 pt-5 pb-8 ${
+            temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
+          }`} style={{ backgroundColor: t.surfaceElevated, borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
         >
           <View className="flex-row items-center justify-center gap-1.5 mb-4">
-            <Search size={16} color="#F7F2E9" strokeWidth={2.5} />
-            <Text className="text-[#F7F2E9] font-extrabold text-lg text-center">Filtrar ventas</Text>
+            <Search size={16} color={t.textPrimary} strokeWidth={2.5} />
+            <Text className="font-extrabold text-lg text-center" style={{ color: t.textPrimary }}>Filtrar ventas</Text>
           </View>
 
-          <Text className="text-[#8C7F6E] text-sm font-bold mb-1.5">Orden</Text>
+          <Text className="text-sm font-bold mb-1.5" style={{ color: t.textSecondary }}>Orden</Text>
           <View className="flex-row gap-2 mb-4">
             {([
               { valor: 'recientes', texto: 'Más recientes' },
@@ -1948,9 +2034,9 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     hapticImpact();
                     setFiltroReporte((f) => ({ ...f, orden: op.valor }));
                   }}
-                  className={`flex-1 rounded-full py-2.5 items-center ${activo ? 'bg-[#6C4FBF]' : 'bg-[#1E1A17]'}`}
+                  className="flex-1 rounded-full py-2.5 items-center" style={activo ? { backgroundColor: t.yape } : { backgroundColor: t.chip }}
                 >
-                  <Text className={`text-xs font-bold ${activo ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
+                  <Text className="font-bold text-xs" style={{ color: activo ? t.onPrimary : t.textSecondary }}>
                     {op.texto}
                   </Text>
                 </Pressable>
@@ -1958,7 +2044,7 @@ className="bg-[#4D2B2B]/40 rounded-full"
             })}
           </View>
 
-          <Text className="text-[#8C7F6E] text-sm font-bold mb-1.5">Método de pago</Text>
+          <Text className="text-sm font-bold mb-1.5" style={{ color: t.textSecondary }}>Método de pago</Text>
           <View className="flex-row gap-2 mb-4">
             {([
               { valor: 'todos', texto: 'Todos' },
@@ -1973,15 +2059,15 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     hapticImpact();
                     setFiltroReporte((f) => ({ ...f, metodo: op.valor }));
                   }}
-                  className={`flex-1 rounded-full py-2.5 items-center ${activo ? 'bg-[#6C4FBF]' : 'bg-[#1E1A17]'}`}
+                  className="flex-1 rounded-full py-2.5 items-center" style={activo ? { backgroundColor: t.yape } : { backgroundColor: t.chip }}
                 >
                   <View className="flex-row items-center gap-1.5">
                     {op.valor === 'YAPE' ? (
-                      <Smartphone size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                      <Smartphone size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                     ) : op.valor === 'EFECTIVO' ? (
-                      <Banknote size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                      <Banknote size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                     ) : null}
-                    <Text className={`text-xs font-bold ${activo ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
+                    <Text className="font-bold text-xs" style={{ color: activo ? t.onPrimary : t.textSecondary }}>
                       {op.texto}
                     </Text>
                   </View>
@@ -1990,7 +2076,7 @@ className="bg-[#4D2B2B]/40 rounded-full"
             })}
           </View>
 
-          <Text className="text-[#8C7F6E] text-sm font-bold mb-1.5">Canal</Text>
+          <Text className="text-sm font-bold mb-1.5" style={{ color: t.textSecondary }}>Canal</Text>
           <View className="flex-row gap-2 mb-6">
             {([
               { valor: 'todos', texto: 'Todos' },
@@ -2005,15 +2091,15 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     hapticImpact();
                     setFiltroReporte((f) => ({ ...f, canal: op.valor }));
                   }}
-                  className={`flex-1 rounded-full py-2.5 items-center ${activo ? 'bg-[#6C4FBF]' : 'bg-[#1E1A17]'}`}
+                  className="flex-1 rounded-full py-2.5 items-center" style={activo ? { backgroundColor: t.yape } : { backgroundColor: t.chip }}
                 >
                   <View className="flex-row items-center gap-1.5">
                     {op.valor === 'mesas' ? (
-                      <Utensils size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                      <Utensils size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                     ) : op.valor === 'delivery' ? (
-                      <Truck size={13} color={activo ? '#F7F2E9' : '#8C7F6E'} strokeWidth={2.5} />
+                      <Truck size={13} color={activo ? t.onPrimary : t.textSecondary} strokeWidth={2.5} />
                     ) : null}
-                    <Text className={`text-xs font-bold ${activo ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}>
+                    <Text className="font-bold text-xs" style={{ color: activo ? t.onPrimary : t.textSecondary }}>
                       {op.texto}
                     </Text>
                   </View>
@@ -2029,17 +2115,17 @@ className="bg-[#4D2B2B]/40 rounded-full"
                 setFiltroReporte({ orden: 'antiguos', metodo: 'todos', canal: 'todos' });
                 setFiltroPanelAbierto(false);
               }}
-              className="flex-1 bg-[#1E1A17] rounded-full items-center"
+              className="flex-1 rounded-full items-center" style={{ backgroundColor: t.chip }}
               innerClassName="w-full py-3.5 items-center justify-center"
             >
-              <Text className="text-[#8C7F6E] font-semibold">Limpiar</Text>
+              <Text className="font-semibold" style={{ color: t.textSecondary }}>Limpiar</Text>
             </ScalePressable>
             <ScalePressable
               onPress={() => setFiltroPanelAbierto(false)}
-              className="flex-1 bg-[#6C4FBF] rounded-full items-center"
+              className="flex-1 rounded-full items-center" style={{ backgroundColor: t.yape }}
               innerClassName="w-full py-3.5 items-center justify-center"
             >
-              <Text className="text-[#F7F2E9] font-bold">Aplicar</Text>
+              <Text className="font-bold" style={{ color: t.onPrimary }}>Aplicar</Text>
             </ScalePressable>
           </View>
         </Animated.View>

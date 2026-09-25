@@ -17,12 +17,17 @@ export function pedidoActivoMasAntiguo(comandas: Order[]): Order | null {
 
 export function formatearMinSeg(desdeISO: string, ahora: number): string {
   const inicio = new Date(desdeISO).getTime();
-  if (Number.isNaN(inicio)) return '--:-- min';
+  if (Number.isNaN(inicio)) return '--:--';
   const ms = Math.max(0, ahora - inicio);
   const totalSeg = Math.floor(ms / 1000);
   const min = Math.floor(totalSeg / 60);
   const seg = totalSeg % 60;
-  return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')} min`;
+  if (min < 60) {
+    return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
+  }
+  const horas = Math.floor(min / 60);
+  const minResto = min % 60;
+  return `${String(horas).padStart(2, '0')}:${String(minResto).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
 }
 
 type Props = {

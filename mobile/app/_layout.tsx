@@ -6,12 +6,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { OrdersProvider } from '../src/context/OrdersContext';
+import { TemaProvider, useTema } from '../src/context/TemaContext';
 import '../global.css';
 
 const queryClient = new QueryClient();
 
 function GuardiaDeSesion({ children }: { children: ReactNode }) {
   const { user, isRestoring } = useAuth();
+  const { t } = useTema();
   const segments = useSegments();
   const router = useRouter();
 
@@ -36,8 +38,8 @@ function GuardiaDeSesion({ children }: { children: ReactNode }) {
 
   if (isRestoring) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#1E1A17]">
-        <ActivityIndicator size="large" color="#D4432B" />
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: t.background }}>
+        <ActivityIndicator size="large" color={t.primary} />
       </View>
     );
   }
@@ -48,15 +50,17 @@ function GuardiaDeSesion({ children }: { children: ReactNode }) {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <OrdersProvider>
-            <GuardiaDeSesion>
-              <Stack screenOptions={{ headerShown: false }} />
-            </GuardiaDeSesion>
-          </OrdersProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <TemaProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <OrdersProvider>
+              <GuardiaDeSesion>
+                <Stack screenOptions={{ headerShown: false }} />
+              </GuardiaDeSesion>
+            </OrdersProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </TemaProvider>
     </GestureHandlerRootView>
   );
 }

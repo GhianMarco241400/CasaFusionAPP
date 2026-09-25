@@ -12,6 +12,8 @@ import {
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Entrada } from '../types';
+import { useTema } from '../context/TemaContext';
+import { alpha } from '../theme/temas';
 import { ScalePressable } from './ScalePressable';
 import { ParaLlevarCheck, TAPERO_DEFAULT } from './ParaLlevarCheck';
 
@@ -46,6 +48,7 @@ export function EntradaModal({
   onClose,
   onConfirm,
 }: Props) {
+  const { t } = useTema();
   const [draftEntrada, setDraftEntrada] = useState<{ name: string; price: number } | undefined>(
     undefined
   );
@@ -123,16 +126,17 @@ export function EntradaModal({
       >
         <View className="flex-1 justify-end">
           <Pressable className="flex-1" onPress={close}>
-            <Animated.View entering={FadeIn.duration(180)} className="flex-1 bg-[#130F0C]/90" />
+            <Animated.View entering={FadeIn.duration(180)} className="flex-1" style={{ backgroundColor: alpha(t.overlay, 90) }} />
           </Pressable>
 
           <Animated.View
             entering={FadeInDown.springify().damping(17).stiffness(190)}
-            className="bg-[#2B2420] border-t-2 border-[#3A322B] rounded-t-3xl px-6 pt-6 pb-8"
+            className="border-t-2 rounded-t-3xl px-6 pt-6 pb-8"
+            style={{ backgroundColor: t.surfaceElevated, borderTopColor: t.border }}
           >
-            <View className="w-12 h-1.5 rounded-full bg-[#3A322B] self-center mb-5" />
-            <Text className="text-[#F7F2E9] text-lg font-extrabold mb-1">Elegir entrada</Text>
-            <Text className="text-[#8C7F6E] text-sm mb-4">
+            <View className="w-12 h-1.5 rounded-full self-center mb-5" style={{ backgroundColor: t.border }} />
+            <Text className="text-lg font-extrabold mb-1" style={{ color: t.textPrimary }}>Elegir entrada</Text>
+            <Text className="text-sm mb-4" style={{ color: t.textSecondary }}>
               Cada plato incluye un acompañamiento.
             </Text>
 
@@ -153,21 +157,23 @@ export function EntradaModal({
               pressedScale={0.98}
             >
               <View
-                className={`rounded-xl border-2 px-4 py-3 mb-4 ${
+                className={`rounded-xl border-2 px-4 py-3 mb-4 ${draftPersonalizada ? '' : 'border-dashed'}`}
+                style={
                   draftPersonalizada
-                    ? 'bg-[#6C4FBF] border-[#6C4FBF]'
-                    : 'bg-[#EAE2F8] border-dashed border-[#6C4FBF]'
-                }`}
+                    ? { backgroundColor: t.yape, borderColor: t.yape }
+                    : { backgroundColor: t.extrasSheet, borderColor: t.yape }
+                }
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1 pr-2">
                     <Text
-                      className={`text-sm font-bold ${draftPersonalizada ? 'text-[#F7F2E9]' : 'text-[#6C4FBF]'}`}
+                      className="text-sm font-bold"
+                      style={draftPersonalizada ? { color: t.onPrimary } : { color: t.yape }}
                     >
                       ✚ Entrada personalizada
                     </Text>
                     {draftPersonalizada && !mostrarFormPersonalizada && (
-                      <Text className="text-[#F7F2E9]/80 text-xs mt-1">
+                      <Text className="text-xs mt-1" style={{ color: alpha(t.onPrimary, 80) }}>
                         {draftPersonalizada.name} · S/ {draftPersonalizada.price.toFixed(2)}
                       </Text>
                     )}
@@ -180,20 +186,18 @@ export function EntradaModal({
                       }}
                       hitSlop={8}
                     >
-                      <View className="w-6 h-6 rounded-full bg-[#F7F2E9] items-center justify-center">
-                        <Text className="text-[#6C4FBF] text-xs font-bold leading-none">✕</Text>
+                      <View className="w-6 h-6 rounded-full items-center justify-center" style={{ backgroundColor: t.onPrimary }}>
+                        <Text className="text-xs font-bold leading-none" style={{ color: t.yape }}>✕</Text>
                       </View>
                     </Pressable>
                   ) : (
                     <View
-                      className={`w-6 h-6 rounded-full items-center justify-center ${
-                        draftPersonalizada ? 'bg-[#F7F2E9]' : 'bg-[#6C4FBF]'
-                      }`}
+                      className="w-6 h-6 rounded-full items-center justify-center"
+                      style={draftPersonalizada ? { backgroundColor: t.onPrimary } : { backgroundColor: t.yape }}
                     >
                       <Text
-                        className={`text-sm font-extrabold leading-none ${
-                          draftPersonalizada ? 'text-[#6C4FBF]' : 'text-[#F7F2E9]'
-                        }`}
+                        className="text-sm font-extrabold leading-none"
+                        style={draftPersonalizada ? { color: t.yape } : { color: t.onPrimary }}
                       >
                         {draftPersonalizada ? '✓' : '+'}
                       </Text>
@@ -206,16 +210,18 @@ export function EntradaModal({
             {mostrarFormPersonalizada && (
               <View className="mb-4">
                 <TextInput
-                  className="bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3 mb-3"
+                  className="rounded-xl text-base px-4 py-3 mb-3"
+                  style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
                   placeholder="Nombre de la entrada extra"
-                  placeholderTextColor="#B8AC9B"
+                  placeholderTextColor={t.placeholder}
                   value={nombreCustom}
                   onChangeText={setNombreCustom}
                 />
                 <TextInput
-                  className="bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3 mb-3"
+                  className="rounded-xl text-base px-4 py-3 mb-3"
+                  style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
                   placeholder="Precio (S/)"
-                  placeholderTextColor="#B8AC9B"
+                  placeholderTextColor={t.placeholder}
                   keyboardType="decimal-pad"
                   value={precioCustom}
                   onChangeText={setPrecioCustom}
@@ -223,9 +229,10 @@ export function EntradaModal({
                 <ScalePressable
                   onPress={handleAddPersonalizada}
                   pressedScale={0.96}
-                  className="bg-[#6C4FBF] rounded-full py-3 mb-2"
+                  className="rounded-full py-3 mb-2"
+                  style={{ backgroundColor: t.yape }}
                 >
-                  <Text className="text-[#F7F2E9] text-center font-bold">
+                  <Text className="text-center font-bold" style={{ color: t.onPrimary }}>
                     Agregar entrada extra
                   </Text>
                 </ScalePressable>
@@ -233,11 +240,11 @@ export function EntradaModal({
             )}
 
             <View className="flex-row items-center gap-2 mb-2">
-              <View className="flex-1 h-px bg-[#3A322B]" />
-              <Text className="text-[#8C7F6E] text-xs font-semibold uppercase tracking-wider">
+              <View className="flex-1 h-px" style={{ backgroundColor: t.border }} />
+              <Text className="text-xs font-semibold uppercase tracking-wider" style={{ color: t.textSecondary }}>
                 Entradas incluidas
               </Text>
-              <View className="flex-1 h-px bg-[#3A322B]" />
+              <View className="flex-1 h-px" style={{ backgroundColor: t.border }} />
             </View>
 
             <ScrollView className="max-h-44 mb-2">
@@ -245,20 +252,20 @@ export function EntradaModal({
                 const activa = draftEntrada?.name === entrada.name;
                 return (
                   <View key={entrada.id}>
-                    {i > 0 && <View className="h-px bg-[#3A322B]" />}
+                    {i > 0 && <View className="h-px" style={{ backgroundColor: t.border }} />}
                     <ScalePressable
                       onPress={() => handleSelectFree(entrada)}
                       pressedScale={0.98}
                       className="py-3 flex-row items-center justify-between"
                     >
-                      <Text className="text-[#F7F2E9] text-base flex-1 pr-3">{entrada.name}</Text>
+                      <Text className="text-base flex-1 pr-3" style={{ color: t.textPrimary }}>{entrada.name}</Text>
                       <View
-                        className={`rounded-full px-3 py-1 ${
-                          activa ? 'bg-[#4D7C4D]' : 'bg-[#1E1A17]'
-                        }`}
+                        className="rounded-full px-3 py-1"
+                        style={activa ? { backgroundColor: t.success } : { backgroundColor: t.chip }}
                       >
                         <Text
-                          className={`text-sm font-semibold ${activa ? 'text-[#F7F2E9]' : 'text-[#8C7F6E]'}`}
+                          className="text-sm font-semibold"
+                          style={activa ? { color: t.onPrimary } : { color: t.textSecondary }}
                         >
                           {activa ? '✓ Incluida' : 'Incluida'}
                         </Text>
@@ -270,21 +277,22 @@ export function EntradaModal({
             </ScrollView>
 
             <ScalePressable onPress={handleSinEntrada} pressedScale={0.98} className="py-2 mb-1">
-              <Text className="text-[#8C7F6E] text-center">Sin entrada</Text>
+              <Text className="text-center" style={{ color: t.textSecondary }}>Sin entrada</Text>
             </ScalePressable>
 
-            <View className="h-px bg-[#3A322B] my-1" />
+            <View className="h-px my-1" style={{ backgroundColor: t.border }} />
 
             <ScalePressable
               onPress={handleGuardar}
               pressedScale={0.96}
-              className="bg-[#D4432B] rounded-full py-3.5 mt-2"
+              className="rounded-full py-3.5 mt-2"
+              style={{ backgroundColor: t.primary }}
             >
-              <Text className="text-[#F7F2E9] text-center font-bold text-base">Guardar</Text>
+              <Text className="text-center font-bold text-base" style={{ color: t.onPrimary }}>Guardar</Text>
             </ScalePressable>
 
             <ScalePressable onPress={close} pressedScale={0.98} className="py-2">
-              <Text className="text-[#8C7F6E] text-center">Cancelar</Text>
+              <Text className="text-center" style={{ color: t.textSecondary }}>Cancelar</Text>
             </ScalePressable>
           </Animated.View>
         </View>

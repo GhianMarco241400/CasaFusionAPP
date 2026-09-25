@@ -66,6 +66,7 @@ export interface Order {
   metodoPago?: MetodoPago;
   status: OrderStatus;
   edited?: boolean; // true si el mesero reenvió una comanda ya enviada
+  urgente?: boolean; // true si mesero/delivery la marcó como urgente para la cocina
   items: OrderItem[];
   total: number; // se recalcula según unitPrice + entrada.price de cada item
   createdAt: string;

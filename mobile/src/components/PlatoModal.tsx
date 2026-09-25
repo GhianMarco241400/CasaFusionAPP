@@ -4,6 +4,8 @@ import { View, Text, Modal, Pressable, TextInput, KeyboardAvoidingView, Platform
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { ScalePressable } from './ScalePressable';
+import { useTema } from '../context/TemaContext';
+import { alpha } from '../theme/temas';
 import { ParaLlevarCheck, TAPERO_DEFAULT } from './ParaLlevarCheck';
 
 export type PlatoDatos = {
@@ -38,6 +40,7 @@ export function PlatoModal({
   onClose,
   onConfirm,
 }: Props) {
+  const { t } = useTema();
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [nombreEntrada, setNombreEntrada] = useState('');
@@ -101,27 +104,30 @@ export function PlatoModal({
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <View className="flex-1 justify-end">
           <Pressable className="flex-1" onPress={close}>
-            <Animated.View entering={FadeIn.duration(180)} className="flex-1 bg-[#130F0C]/90" />
+            <Animated.View entering={FadeIn.duration(180)} className="flex-1" style={{ backgroundColor: alpha(t.overlay, 90) }} />
           </Pressable>
 
           <Animated.View
             entering={FadeInDown.springify().damping(17).stiffness(190)}
-            className="bg-[#2B2420] border-t-2 border-[#3A322B] rounded-t-3xl px-6 pt-6 pb-8"
+            className="border-t-2 rounded-t-3xl px-6 pt-6 pb-8"
+            style={{ backgroundColor: t.surfaceElevated, borderTopColor: t.border }}
           >
-            <View className="w-12 h-1.5 rounded-full bg-[#3A322B] self-center mb-5" />
-            <Text className="text-[#F7F2E9] text-lg font-extrabold mb-4">{titulo}</Text>
+            <View className="w-12 h-1.5 rounded-full self-center mb-5" style={{ backgroundColor: t.border }} />
+            <Text className="text-lg font-extrabold mb-4" style={{ color: t.textPrimary }}>{titulo}</Text>
 
             <TextInput
-              className="bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3 mb-3"
+              className="rounded-xl text-base px-4 py-3 mb-3"
+              style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
               placeholder="Nombre del plato"
-              placeholderTextColor="#B8AC9B"
+              placeholderTextColor={t.placeholder}
               value={nombre}
               onChangeText={setNombre}
             />
             <TextInput
-              className="bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3 mb-3"
+              className="rounded-xl text-base px-4 py-3 mb-3"
+              style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
               placeholder="Precio (S/)"
-              placeholderTextColor="#B8AC9B"
+              placeholderTextColor={t.placeholder}
               keyboardType="decimal-pad"
               value={precio}
               onChangeText={setPrecio}
@@ -137,24 +143,26 @@ export function PlatoModal({
             )}
 
             <View className="flex-row items-center gap-2 my-1">
-              <View className="flex-1 h-px bg-[#3A322B]" />
-              <Text className="text-[#8C7F6E] text-xs font-semibold uppercase tracking-wider">
+              <View className="flex-1 h-px" style={{ backgroundColor: t.border }} />
+              <Text className="text-xs font-semibold uppercase tracking-wider" style={{ color: t.textSecondary }}>
                 Entrada (opcional)
               </Text>
-              <View className="flex-1 h-px bg-[#3A322B]" />
+              <View className="flex-1 h-px" style={{ backgroundColor: t.border }} />
             </View>
 
             <TextInput
-              className="bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3 mt-3 mb-3"
+              className="rounded-xl text-base px-4 py-3 mt-3 mb-3"
+              style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
               placeholder="Nombre de la entrada"
-              placeholderTextColor="#B8AC9B"
+              placeholderTextColor={t.placeholder}
               value={nombreEntrada}
               onChangeText={setNombreEntrada}
             />
             <TextInput
-              className="bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-4 py-3 mb-4"
+              className="rounded-xl text-base px-4 py-3 mb-4"
+              style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
               placeholder="Precio de la entrada (S/)"
-              placeholderTextColor="#B8AC9B"
+              placeholderTextColor={t.placeholder}
               keyboardType="decimal-pad"
               value={precioEntrada}
               onChangeText={setPrecioEntrada}
@@ -169,15 +177,16 @@ export function PlatoModal({
                   (nombreEntrada.trim().length > 0 && !isNaN(parseFloat(precioEntrada)) && parseFloat(precioEntrada) > 0)
                 )
               }
-              className="bg-[#6C4FBF] rounded-full py-3 mb-2"
+              className="rounded-full py-3 mb-2"
+              style={{ backgroundColor: t.yape }}
             >
-              <Text className="text-[#F7F2E9] text-center font-bold text-base">
+              <Text className="text-center font-bold text-base" style={{ color: t.onPrimary }}>
                 {inicial ? 'Guardar cambios' : 'Agregar a comanda'}
               </Text>
             </ScalePressable>
 
             <ScalePressable onPress={close} pressedScale={0.98} className="py-2">
-              <Text className="text-[#8C7F6E] text-center">Cancelar</Text>
+              <Text className="text-center" style={{ color: t.textSecondary }}>Cancelar</Text>
             </ScalePressable>
           </Animated.View>
         </View>

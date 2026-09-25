@@ -11,6 +11,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
+import { useTema } from '../context/TemaContext';
 import { DiaResumen, fechaLocalAYYYYMMDD } from '../services/reports';
 
 const DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -29,6 +30,7 @@ function fechaCorta(date: string): string {
 type Props = { dias: DiaResumen[] };
 
 export function GraficoSemana({ dias }: Props) {
+  const { t, temaId } = useTema();
   const [ancho, setAncho] = useState(320);
   const [seleccion, setSeleccion] = useState<number | null>(null);
   const alto = 170;
@@ -83,7 +85,7 @@ export function GraficoSemana({ dias }: Props) {
                 y1={y}
                 x2={ancho - padX}
                 y2={y}
-                stroke="#3A322B"
+                stroke={t.border}
                 strokeWidth={1}
                 strokeDasharray="4 5"
               />
@@ -109,8 +111,8 @@ export function GraficoSemana({ dias }: Props) {
                 cx={p.x}
                 cy={p.y}
                 r={esHoy || esSel ? 5.5 : 3.5}
-                fill={esSel ? '#F7F2E9' : esHoy ? COLOR.rojo : COLOR.amarillo}
-                stroke={esSel ? '#6C4FBF' : 'none'}
+                fill={esSel ? t.textPrimary : esHoy ? COLOR.rojo : COLOR.amarillo}
+                stroke={esSel ? t.yape : 'none'}
                 strokeWidth={2}
               />
             );
@@ -124,7 +126,7 @@ export function GraficoSemana({ dias }: Props) {
               textAnchor="middle"
               fontSize={10}
               fontWeight="700"
-              fill={hoy === p.d.date ? '#F7F2E9' : '#8C7F6E'}
+              fill={hoy === p.d.date ? t.textPrimary : t.textSecondary}
             >
               {DIAS[p.i]}
             </SvgText>
@@ -180,12 +182,15 @@ export function GraficoSemana({ dias }: Props) {
       </View>
 
       {diaSeleccionado && (
-        <View className="mt-3 bg-[#1E1A17] rounded-2xl border border-[#3A322B] px-4 py-3">
+        <View
+        className={`mt-3 rounded-2xl px-4 py-3 ${temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'}`}
+        style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+      >
           <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-[#F7F2E9] font-extrabold text-sm">
+            <Text className="font-extrabold text-sm" style={{ color: t.textPrimary }}>
               {fechaCorta(diaSeleccionado.date)}
             </Text>
-            <Text className="text-[#4D7C4D] font-extrabold">
+            <Text className="font-extrabold" style={{ color: t.success }}>
               S/ {diaSeleccionado.total.toFixed(2)}
             </Text>
           </View>
@@ -199,9 +204,9 @@ export function GraficoSemana({ dias }: Props) {
               <View key={f.label} className="flex-1">
                 <View className="flex-row items-center gap-1 mb-0.5">
                   <View className="w-2 h-2 rounded-full" style={{ backgroundColor: f.color }} />
-                  <Text className="text-[#8C7F6E] text-[11px]">{f.label}</Text>
+                  <Text className="text-[11px]" style={{ color: t.textSecondary }}>{f.label}</Text>
                 </View>
-                <Text className="text-[#F7F2E9] font-bold text-sm">
+                <Text className="font-bold text-sm" style={{ color: t.textPrimary }}>
                   S/ {f.valor.toFixed(2)}
                 </Text>
               </View>

@@ -23,6 +23,7 @@ type BackendOrder = {
   metodoPago?: MetodoPago | null;
   status: OrderStatus;
   edited?: boolean;
+  urgente?: boolean;
   items: OrderItem[];
   total: number;
   createdAt: string;
@@ -78,6 +79,7 @@ export function mapOrderFromBackend(orden: BackendOrder): Order {
     metodoPago: orden.metodoPago ?? undefined,
     status: orden.status,
     edited: orden.edited ?? false,
+    urgente: orden.urgente ?? false,
     items: orden.items,
     total: orden.total,
     createdAt: orden.createdAt,
@@ -100,7 +102,8 @@ export type DatosCliente = {
 export async function createOrder(
   tableNumber: number,
   items: OrderItem[],
-  cliente?: DatosCliente
+  cliente?: DatosCliente,
+  urgente?: boolean
 ): Promise<Order> {
   const response = await api.post<BackendOrder>('/orders', {
     tableNumber,
@@ -109,6 +112,7 @@ export async function createOrder(
     clienteNombre: cliente?.clienteNombre,
     telefono: cliente?.telefono,
     direccion: cliente?.direccion,
+    urgente: urgente ?? false,
   });
   return mapOrderFromBackend(response.data);
 }
@@ -126,6 +130,14 @@ export async function updateOrderItems(
   items: OrderItem[]
 ): Promise<Order> {
   const response = await api.patch<BackendOrder>(`/orders/${orderId}/items`, { items });
+  return mapOrderFromBackend(response.data);
+}
+
+export async function updateOrderUrgente(
+  orderId: string,
+  urgente: boolean
+): Promise<Order> {
+  const response = await api.patch<BackendOrder>(`/orders/${orderId}/urgente`, { urgente });
   return mapOrderFromBackend(response.data);
 }
 

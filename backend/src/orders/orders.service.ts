@@ -36,6 +36,7 @@ export class OrdersService {
       status: 'PENDING',
       items: dto.items,
       total,
+      urgente: dto.urgente ?? false,
     });
 
     return nuevaOrden;
@@ -104,9 +105,32 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, status: OrderStatus): Promise<OrderDocument> {
+    const actualizacion: { status: OrderStatus; edited: boolean; urgente?: boolean } = {
+      status,
+      edited: false,
+    };
+
+    if (status === 'READY') {
+      actualizacion.urgente = false;
+    }
+
     const orden = await this.orderModel.findByIdAndUpdate(
       id,
-      { status, edited: false },
+      actualizacion,
+      { returnDocument: 'after' }
+    );
+
+    if (!orden) {
+      throw new NotFoundException('Orden no encontrada');
+    }
+
+    return orden;
+  }
+
+  async setUrgente(id: string, urgente: boolean): Promise<OrderDocument> {
+    const orden = await this.orderModel.findByIdAndUpdate(
+      id,
+      { urgente },
       { returnDocument: 'after' }
     );
 

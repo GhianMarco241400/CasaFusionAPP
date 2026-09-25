@@ -18,6 +18,8 @@ import { Platform } from 'react-native';
 import { Order, OrderStatus, MetodoPago } from '../../../../src/types';
 import { useOrders } from '../../../../src/context/OrdersContext';
 import { ScalePressable } from '../../../../src/components/ScalePressable';
+import { useTema } from '../../../../src/context/TemaContext';
+import { alpha, TemaTokens } from '../../../../src/theme/temas';
 import {
   ArrowLeft,
   Banknote,
@@ -43,6 +45,7 @@ function hapticSuccess() {
 
 function Steam({ delay, left }: { delay: number; left: number }) {
   const t = useSharedValue(0);
+  const { t: tema } = useTema();
 
   useEffect(() => {
     t.value = withRepeat(
@@ -62,13 +65,14 @@ function Steam({ delay, left }: { delay: number; left: number }) {
 
   return (
     <Animated.View style={[{ position: 'absolute', left, top: 2 }, animatedStyle]}>
-      <View className="w-3 h-3 rounded-full bg-[#B8AC9B] opacity-50" />
+      <View className="w-3 h-3 rounded-full opacity-50" style={{ backgroundColor: tema.placeholder }} />
     </Animated.View>
   );
 }
 
 function ChefAnimado() {
   const bob = useSharedValue(0);
+  const { t } = useTema();
 
   useEffect(() => {
     bob.value = withRepeat(
@@ -88,49 +92,49 @@ function ChefAnimado() {
       <Steam delay={0} left={10} />
       <Steam delay={500} left={72} />
 <Animated.View
-        style={bobStyle}
-        className="mt-8 w-20 h-20 rounded-full bg-[#2B2420] border-2 border-[#D4432B] items-center justify-center"
+        style={[bobStyle, { backgroundColor: t.surface, borderColor: t.primary }]}
+        className="mt-8 w-20 h-20 rounded-full border-2 items-center justify-center"
       >
         <Animated.View entering={ZoomIn.duration(400)}>
-          <ChefHat size={38} color="#F7F2E9" strokeWidth={1.8} />
+          <ChefHat size={38} color={t.textPrimary} strokeWidth={1.8} />
         </Animated.View>
       </Animated.View>
     </View>
   );
 }
 
-function chipEstado(status: OrderStatus) {
+function chipEstado(status: OrderStatus, t: TemaTokens) {
   switch (status) {
     case 'PENDING':
-      return { label: 'Pendiente', cls: 'bg-[#D4432B]/20', txt: 'text-[#D4432B]' };
+      return { label: 'Pendiente', bg: alpha(t.primary, 20), txt: t.primary };
     case 'IN_PREPARATION':
-      return { label: 'Preparando', cls: 'bg-[#E8A33D]/20', txt: 'text-[#E8A33D]' };
+      return { label: 'Preparando', bg: alpha(t.accent, 20), txt: t.accent };
     case 'READY':
-      return { label: 'Listo', cls: 'bg-[#4D7C4D]/25', txt: 'text-[#4D7C4D]' };
+      return { label: 'Listo', bg: alpha(t.success, 25), txt: t.success };
     default:
-      return { label: status, cls: 'bg-[#2B2420]', txt: 'text-[#8C7F6E]' };
+      return { label: status, bg: t.surface, txt: t.textSecondary };
   }
 }
 
-function estadoDominante(comandas: Order[]) {
+function estadoDominante(comandas: Order[], t: TemaTokens) {
   if (comandas.every((o) => o.status === 'READY')) {
     return {
       label: 'Listo para cobrar',
-      fondo: 'bg-[#4D7C4D]',
-      texto: 'text-[#F7F2E9]',
+      fondo: t.success,
+      texto: t.onPrimary,
     };
   }
   if (comandas.some((o) => o.status === 'PENDING')) {
     return {
       label: 'Pendiente',
-      fondo: 'bg-[#D4432B]',
-      texto: 'text-[#F7F2E9]',
+      fondo: t.primary,
+      texto: t.onPrimary,
     };
   }
   return {
     label: 'Preparando',
-    fondo: 'bg-[#E8A33D]',
-    texto: 'text-[#2B2420]',
+    fondo: t.accent,
+    texto: t.pillText,
   };
 }
 
@@ -140,32 +144,56 @@ type ComandaCardProps = {
   onEditar: () => void;
   onEliminar: () => void;
   onCobrar?: () => void;
+  onUrgente?: () => void;
   cobrando?: boolean;
 };
 
-function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, cobrando }: ComandaCardProps) {
-  const chip = chipEstado(order.status);
+function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, onUrgente, cobrando }: ComandaCardProps) {
+  const { t, temaId } = useTema();
+  const chip = chipEstado(order.status, t);
   const esParallevar = numero === 0;
 
   return (
-    <Animated.View entering={FadeInDown.duration(250)} className="bg-[#F7F2E9] rounded-xl p-3.5 mb-3">
-      <View className="flex-row items-center justify-between mb-2">
-        <View className="flex-row items-center gap-1.5">
-          {esParallevar && <Package size={15} color="#D4432B" />}
-          <Text className="text-[#2B2420] font-extrabold">
+    <Animated.View
+      entering={FadeInDown.duration(250)}
+      className={`bg-[#F7F2E9] rounded-xl p-3.5 mb-3 border-[3px] ${
+        order.urgente ? '' : temaId === 'claro' ? 'border-[#1E1A17]' : 'border-transparent'
+      }`}
+      style={
+        order.urgente
+          ? {
+              borderColor: t.primary,
+              shadowColor: '#D4432B',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.45,
+              shadowRadius: 12,
+              elevation: 12,
+            }
+          : temaId === 'claro'
+            ? { borderColor: '#1E1A17' }
+            : undefined
+      }
+    >
+      <View className="flex-row items-center justify-between mb-2 gap-2">
+        <View className="flex-1 flex-row items-center gap-1.5">
+          {esParallevar && <Package size={15} color={t.primary} />}
+          <Text className="text-[#2B2420] font-extrabold flex-shrink" numberOfLines={1}>
             {esParallevar ? 'Comanda para llevar' : `Comanda de Mesa ${numero}`}
           </Text>
-        </View>
-        <View className="flex-row items-center gap-1.5">
-          {order.edited && (
-            <View className="bg-[#E8A33D] rounded-full px-2 py-0.5 flex-row items-center gap-0.5">
-              <Pencil size={10} color="#1E1A17" strokeWidth={2.5} />
-              <Text className="text-[#1E1A17] text-[10px] font-bold">Editado</Text>
+          {order.urgente && (
+            <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: t.primary }}>
+              <Text className="text-[10px] font-bold" style={{ color: t.onPrimary }}>🛎️ URGENTE</Text>
             </View>
           )}
-          <View className={`rounded-full px-2 py-0.5 ${chip.cls}`}>
-            <Text className={`text-[10px] font-bold ${chip.txt}`}>{chip.label}</Text>
-          </View>
+          {order.edited && (
+            <View className="rounded-full px-2 py-0.5 flex-row items-center gap-0.5" style={{ backgroundColor: t.accent }}>
+              <Pencil size={10} color={t.chip} strokeWidth={2.5} />
+              <Text className="text-[10px] font-bold" style={{ color: t.chip }}>Editado</Text>
+            </View>
+          )}
+        </View>
+        <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: chip.bg }}>
+          <Text className="text-[10px] font-bold" style={{ color: chip.txt }}>{chip.label}</Text>
         </View>
       </View>
 
@@ -173,8 +201,8 @@ function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, cobrando }
         <View key={i} className="mb-1">
           <View className="flex-row items-center gap-1">
             {!item.dishId && (
-              <View className="bg-[#6C4FBF] rounded px-1.5 py-0.5">
-                <Text className="text-[#F7F2E9] text-[9px] font-bold">PERSO</Text>
+              <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: t.yape }}>
+                <Text className="text-[9px] font-bold" style={{ color: t.onPrimary }}>PERSO</Text>
               </View>
             )}
             <Text className="text-[#2B2420] flex-shrink">
@@ -206,28 +234,78 @@ function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, cobrando }
         </View>
       ))}
 
-      <View className="flex-row items-center justify-between mt-2.5">
+      <View className="flex-row items-center justify-between mt-2.5 gap-2 flex-wrap">
         <Text className="text-[#8C7F6E] text-sm font-bold">Total: S/ {order.total.toFixed(2)}</Text>
         {order.status === 'PENDING' && (
-          <View className="flex-row gap-2">
+          <View className="flex-row gap-2 items-center">
+            {onUrgente && (
+              <ScalePressable onPress={onUrgente} pressedScale={0.95} className="rounded-lg overflow-hidden">
+                <View
+                  className={`rounded-lg py-1.5 px-2.5 border ${
+                    order.urgente ? '' : 'border-dashed'
+                  }`}
+                  style={
+                    order.urgente
+                      ? { backgroundColor: t.primary, borderColor: t.primary }
+                      : {
+                          backgroundColor: alpha(t.primary, 15),
+                          borderColor: alpha(t.primary, 50),
+                        }
+                  }
+                >
+                  <Text
+                    className="text-xs font-bold"
+                    style={{ color: order.urgente ? t.onPrimary : t.primary }}
+                  >
+                    🛎️ {order.urgente ? 'Urgente' : 'Marcar urgente'}
+                  </Text>
+                </View>
+              </ScalePressable>
+            )}
             <ScalePressable onPress={onEditar} pressedScale={0.95} className="rounded-lg overflow-hidden">
-              <View className="bg-[#6C4FBF] rounded-lg py-2 px-4 flex-row items-center gap-1.5">
-                <Pencil size={14} color="#F7F2E9" strokeWidth={2.5} />
-                <Text className="text-[#F7F2E9] text-sm font-bold">Editar</Text>
+              <View className="rounded-lg py-2 px-4 flex-row items-center gap-1.5" style={{ backgroundColor: t.yape }}>
+                <Pencil size={14} color={t.onPrimary} strokeWidth={2.5} />
+                <Text className="text-sm font-bold" style={{ color: t.onPrimary }}>Editar</Text>
               </View>
             </ScalePressable>
             <ScalePressable onPress={onEliminar} pressedScale={0.95} className="rounded-lg overflow-hidden">
-              <View className="bg-[#D4432B] rounded-lg py-2 px-4 items-center justify-center">
-                <Trash2 size={16} color="#F7F2E9" />
+              <View className="rounded-lg py-2 px-4 items-center justify-center" style={{ backgroundColor: t.primary }}>
+                <Trash2 size={16} color={t.onPrimary} />
+              </View>
+            </ScalePressable>
+          </View>
+        )}
+        {order.status === 'IN_PREPARATION' && onUrgente && (
+          <View className="flex-row gap-2">
+            <ScalePressable onPress={onUrgente} pressedScale={0.95} className="rounded-lg overflow-hidden">
+              <View
+                className={`rounded-lg py-1.5 px-2.5 border ${
+                  order.urgente ? '' : 'border-dashed'
+                }`}
+                style={
+                  order.urgente
+                    ? { backgroundColor: t.primary, borderColor: t.primary }
+                    : {
+                        backgroundColor: alpha(t.primary, 15),
+                        borderColor: alpha(t.primary, 50),
+                      }
+                }
+              >
+                <Text
+                  className="text-xs font-bold"
+                  style={{ color: order.urgente ? t.onPrimary : t.primary }}
+                >
+                  🛎️ {order.urgente ? 'Urgente' : 'Marcar urgente'}
+                </Text>
               </View>
             </ScalePressable>
           </View>
         )}
         {order.status === 'READY' && onCobrar && (
           <ScalePressable onPress={onCobrar} pressedScale={0.95} disabled={cobrando} className="rounded-lg overflow-hidden">
-            <View className={`bg-[#4D7C4D] rounded-lg py-2 px-4 flex-row items-center gap-1.5 ${cobrando ? 'opacity-70' : ''}`}>
-              <Receipt size={15} color="#F7F2E9" strokeWidth={2.2} />
-              <Text className="text-[#F7F2E9] text-sm font-bold">Cobrar</Text>
+            <View className={`rounded-lg py-2 px-4 flex-row items-center gap-1.5 ${cobrando ? 'opacity-70' : ''}`} style={{ backgroundColor: t.success }}>
+              <Receipt size={15} color={t.onPrimary} strokeWidth={2.2} />
+              <Text className="text-sm font-bold" style={{ color: t.onPrimary }}>Cobrar</Text>
             </View>
           </ScalePressable>
         )}
@@ -239,16 +317,22 @@ function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, cobrando }
 type ResumenMesaProps = { comandas: Order[]; total: number };
 
 function ResumenMesa({ comandas, total }: ResumenMesaProps) {
+  const { t, temaId } = useTema();
   const items = comandas.flatMap((o) => o.items);
   const esParallevar = comandas.length > 0 && comandas[0].tableNumber === 0;
   return (
-    <Animated.View entering={FadeInDown.duration(250)} className="bg-[#F7F2E9] rounded-2xl overflow-hidden">
-      <View className="bg-[#4D7C4D] px-4 py-2.5 flex-row items-center justify-between">
-        <Text className="text-[#F7F2E9] font-extrabold text-lg">
+    <Animated.View
+      entering={FadeInDown.duration(250)}
+      className={`bg-[#F7F2E9] rounded-2xl overflow-hidden ${
+        temaId === 'claro' ? 'border-[3px] border-[#1E1A17]' : ''
+      }`}
+    >
+      <View className="px-4 py-2.5 flex-row items-center justify-between" style={{ backgroundColor: t.success }}>
+        <Text className="font-extrabold text-lg" style={{ color: t.onPrimary }}>
           {esParallevar ? 'Resumen del pedido para llevar' : 'Resumen de la mesa'}
         </Text>
-        <View className="w-6 h-6 rounded-full bg-[#F7F2E9]/20 items-center justify-center">
-          <Check size={14} color="#F7F2E9" strokeWidth={3} />
+        <View className="w-6 h-6 rounded-full items-center justify-center" style={{ backgroundColor: alpha(t.onPrimary, 20) }}>
+          <Check size={14} color={t.onPrimary} strokeWidth={3} />
         </View>
       </View>
       <View className="px-4 pt-3 pb-4">
@@ -256,8 +340,8 @@ function ResumenMesa({ comandas, total }: ResumenMesaProps) {
           <View key={i} className="mb-2">
             <View className="flex-row items-center gap-1">
               {!item.dishId && (
-                <View className="bg-[#6C4FBF] rounded px-1.5 py-0.5">
-                  <Text className="text-[#F7F2E9] text-[10px] font-bold">PERSO</Text>
+                <View className="rounded px-1.5 py-0.5" style={{ backgroundColor: t.yape }}>
+                  <Text className="text-[10px] font-bold" style={{ color: t.onPrimary }}>PERSO</Text>
                 </View>
               )}
               <Text className="text-[#2B2420] font-semibold flex-1 flex-shrink" numberOfLines={2}>
@@ -309,10 +393,11 @@ function ResumenMesa({ comandas, total }: ResumenMesaProps) {
 }
 
 export default function EstadoMesaScreen() {
+  const { t, temaId } = useTema();
   const { numero } = useLocalSearchParams<{ numero: string }>();
   const mesa = Number(numero);
   const esParallevar = mesa === 0;
-  const { getOrdersForTable, deleteOrder, completeTable, completeOrder } = useOrders();
+  const { getOrdersForTable, deleteOrder, completeTable, completeOrder, setUrgente } = useOrders();
   const comandas = getOrdersForTable(mesa);
   const [completando, setCompletando] = useState(false);
   const [completada, setCompletada] = useState(false);
@@ -325,7 +410,7 @@ export default function EstadoMesaScreen() {
   const todasListas = comandas.length > 0 && comandas.every((o) => o.status === 'READY');
   const pendientes = comandas.filter((o) => o.status !== 'READY').length;
   const totalMesa = comandas.reduce((acc, o) => acc + o.total, 0);
-  const estPill = comandas.length > 0 ? estadoDominante(comandas) : null;
+  const estPill = comandas.length > 0 ? estadoDominante(comandas, t) : null;
   const cobroTotal = cobro?.tipo === 'comanda' ? cobro.order.total : totalMesa;
 
   function confirmarEliminar(orderId: string) {
@@ -382,8 +467,8 @@ export default function EstadoMesaScreen() {
   }
 
   return (
-    <View className="flex-1 bg-[#1E1A17] px-6 pt-14">
-      <View className="flex-row items-center mb-4">
+    <View className="flex-1 px-6 pt-14" style={{ backgroundColor: t.background }}>
+      <View className="flex-row items-center mb-9">
         <ScalePressable
           onPress={() => {
             hapticImpact(Haptics.ImpactFeedbackStyle.Soft);
@@ -391,15 +476,20 @@ export default function EstadoMesaScreen() {
           }}
           className="mr-3"
         >
-          <View className="w-11 h-11 rounded-full bg-[#2B2420] border border-[#3A322B] items-center justify-center">
-            <ArrowLeft size={22} color="#F7F2E9" strokeWidth={2.2} />
+          <View
+            className={`w-11 h-11 rounded-full items-center justify-center ${
+              temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+            }`}
+            style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+          >
+            <ArrowLeft size={22} color={t.textPrimary} strokeWidth={2.2} />
           </View>
         </ScalePressable>
         <View className="flex-1">
-          <Text className="text-[#F7F2E9] text-2xl font-extrabold">
+          <Text className="text-2xl font-extrabold" style={{ color: t.textPrimary }}>
             {esParallevar ? 'Para llevar' : `Mesa ${numero}`}
           </Text>
-          <Text className="text-[#8C7F6E] text-sm">
+          <Text className="text-sm" style={{ color: t.textSecondary }}>
             {comandas.length === 0
               ? 'Sin pedidos en cocina'
               : todasListas
@@ -408,8 +498,8 @@ export default function EstadoMesaScreen() {
           </Text>
         </View>
         {estPill && (
-          <View className={`rounded-full px-3 py-1 ${estPill.fondo}`}>
-            <Text className={`${estPill.texto} text-xs font-bold`}>{estPill.label}</Text>
+          <View className="rounded-full px-3 py-1" style={{ backgroundColor: estPill.fondo }}>
+            <Text className="text-xs font-bold" style={{ color: estPill.texto }}>{estPill.label}</Text>
           </View>
         )}
       </View>
@@ -418,8 +508,8 @@ export default function EstadoMesaScreen() {
         {comandas.length === 0 ? (
           <View className="flex-1 items-center justify-center gap-3">
             <ChefAnimado />
-            <Text className="text-[#8C7F6E] text-sm mt-2">No hay comandas en cocina</Text>
-            <Text className="text-[#B8AC9B] text-xs">Envíale un pedido a la cocina</Text>
+            <Text className="text-sm mt-2" style={{ color: t.textSecondary }}>No hay comandas en cocina</Text>
+            <Text className="text-xs" style={{ color: t.placeholder }}>Envíale un pedido a la cocina</Text>
           </View>
         ) : todasListas && !esParallevar ? (
           <FlatList
@@ -450,6 +540,14 @@ export default function EstadoMesaScreen() {
                       ? () => cobrarComanda(item)
                       : undefined
                   }
+                  onUrgente={
+                    item.status === 'PENDING' || item.status === 'IN_PREPARATION'
+                      ? () => {
+                          hapticImpact(Haptics.ImpactFeedbackStyle.Light);
+                          setUrgente(item.id, !item.urgente);
+                        }
+                      : undefined
+                  }
                   cobrando={completando}
                 />
               )}
@@ -462,10 +560,11 @@ export default function EstadoMesaScreen() {
         {todasListas && !esParallevar && (
           <ScalePressable onPress={completarMesa} pressedScale={0.97} className="mb-3">
             <View
-              className={`bg-[#4D7C4D] rounded-2xl py-4 items-center flex-row justify-center gap-2 ${completando ? 'opacity-70' : ''}`}
+              className={`rounded-2xl py-4 items-center flex-row justify-center gap-2 ${completando ? 'opacity-70' : ''}`}
+              style={{ backgroundColor: t.success }}
             >
-              <Check size={18} color="#F7F2E9" strokeWidth={2.5} />
-              <Text className="text-[#F7F2E9] text-center font-bold text-base">
+              <Check size={18} color={t.onPrimary} strokeWidth={2.5} />
+              <Text className="text-center font-bold text-base" style={{ color: t.onPrimary }}>
                 {completando ? 'Guardando...' : 'Comanda completada'}
               </Text>
             </View>
@@ -478,8 +577,8 @@ export default function EstadoMesaScreen() {
           }}
           pressedScale={0.97}
         >
-          <View className="bg-[#D4432B] rounded-2xl py-4 items-center">
-            <Text className="text-[#F7F2E9] text-center font-bold text-base">
+          <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: t.primary }}>
+            <Text className="text-center font-bold text-base" style={{ color: t.onPrimary }}>
               + Agregar pedidos
             </Text>
           </View>
@@ -487,12 +586,17 @@ export default function EstadoMesaScreen() {
       </View>
 
       <Modal visible={cobro !== null} transparent animationType="none">
-        <View className="flex-1 items-center justify-center px-8 bg-[#130F0C]/70">
-          <View className="rounded-3xl bg-[#2B2420] border border-[#3A322B] p-6 w-full max-w-sm items-center">
-            <Text className="text-[#F7F2E9] text-lg font-extrabold mb-1">
+        <View className="flex-1 items-center justify-center px-8" style={{ backgroundColor: alpha(t.overlay, 70) }}>
+          <View
+            className={`rounded-3xl p-6 w-full max-w-sm items-center ${
+              temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+            }`}
+            style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+          >
+            <Text className="text-lg font-extrabold mb-1" style={{ color: t.textPrimary }}>
               ¿Cómo pagó el cliente?
             </Text>
-            <Text className="text-[#8C7F6E] text-sm mb-3">
+            <Text className="text-sm mb-3" style={{ color: t.textSecondary }}>
               S/ {cobroTotal.toFixed(2)} · Se cerrará y entrará al reporte del día
             </Text>
             <ScalePressable
@@ -500,12 +604,12 @@ export default function EstadoMesaScreen() {
               pressedScale={0.97}
               className="w-full mb-3"
             >
-              <View className="bg-[#6C4FBF] rounded-2xl py-4 items-center">
+              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: t.yape }}>
                 <View className="flex-row items-center gap-2">
-                  <Smartphone size={18} color="#F7F2E9" strokeWidth={2.2} />
-                  <Text className="text-[#F7F2E9] font-bold text-base">Pagó por Yape</Text>
+                  <Smartphone size={18} color={t.onPrimary} strokeWidth={2.2} />
+                  <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Pagó por Yape</Text>
                 </View>
-                <Text className="text-[#F7F2E9]/80 text-xs mt-0.5">Cuenta como recaudado</Text>
+                <Text className="text-xs mt-0.5" style={{ color: alpha(t.onPrimary, 80) }}>Cuenta como recaudado</Text>
               </View>
             </ScalePressable>
             <ScalePressable
@@ -513,53 +617,60 @@ export default function EstadoMesaScreen() {
               pressedScale={0.97}
               className="w-full mb-3"
             >
-              <View className="bg-[#4D7C4D] rounded-2xl py-4 items-center">
+              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: t.success }}>
                 <View className="flex-row items-center gap-2">
-                  <Banknote size={18} color="#F7F2E9" strokeWidth={2.2} />
-                  <Text className="text-[#F7F2E9] font-bold text-base">Pagó en efectivo</Text>
+                  <Banknote size={18} color={t.onPrimary} strokeWidth={2.2} />
+                  <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Pagó en efectivo</Text>
                 </View>
-                <Text className="text-[#F7F2E9]/80 text-xs mt-0.5">Cuenta como recaudado</Text>
+                <Text className="text-xs mt-0.5" style={{ color: alpha(t.onPrimary, 80) }}>Cuenta como recaudado</Text>
               </View>
             </ScalePressable>
             <ScalePressable onPress={() => setCobro(null)} pressedScale={0.98} className="py-2">
-              <Text className="text-[#8C7F6E] text-center">Cancelar</Text>
+              <Text className="text-center" style={{ color: t.textSecondary }}>Cancelar</Text>
             </ScalePressable>
           </View>
         </View>
       </Modal>
 
       <Modal visible={completada} transparent animationType="none" onRequestClose={() => router.back()}>
-        <View className="flex-1 items-center justify-center px-8 bg-[#130F0C]/70">
+        <View className="flex-1 items-center justify-center px-8" style={{ backgroundColor: alpha(t.overlay, 70) }}>
           <Animated.View
             entering={FadeIn.duration(200)}
-            className="bg-[#2B2420] rounded-3xl border border-[#3A322B] p-8 w-full max-w-sm items-center"
+            className={`rounded-3xl p-8 w-full max-w-sm items-center ${
+              temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+            }`}
+            style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
           >
             <Animated.View entering={ZoomIn.duration(350)} className="mb-4">
-              <View className="w-16 h-16 rounded-full bg-[#F7F2E9]/10 items-center justify-center">
-                <Receipt size={34} color="#E8A33D" strokeWidth={1.8} />
+              <View
+                className="w-16 h-16 rounded-full items-center justify-center"
+                style={{ backgroundColor: alpha(t.textPrimary, 10) }}
+              >
+                <Receipt size={34} color={t.accent} strokeWidth={1.8} />
               </View>
             </Animated.View>
-            <Text className="text-[#F7F2E9] text-xl font-extrabold mb-1">
+            <Text className="text-xl font-extrabold mb-1" style={{ color: t.textPrimary }}>
               {esParallevar ? 'Pedido para llevar completado' : `Mesa ${numero} completada`}
             </Text>
-            <Text className="text-[#8C7F6E] text-sm text-center mb-1">
+            <Text className="text-sm text-center mb-1" style={{ color: t.textSecondary }}>
               Se guardó en el reporte del día
             </Text>
-            <Text className="text-[#4D7C4D] text-2xl font-extrabold mb-1">
+            <Text className="text-2xl font-extrabold mb-1" style={{ color: t.success }}>
               S/ {totalCobrado.toFixed(2)}
             </Text>
             <View className="flex-row items-center gap-1.5 mb-6">
-              {metodoUsado === 'YAPE' && <Smartphone size={13} color="#8C7F6E" strokeWidth={2.2} />}
-              {metodoUsado === 'EFECTIVO' && <Banknote size={13} color="#8C7F6E" strokeWidth={2.2} />}
-              <Text className="text-[#8C7F6E] text-xs font-bold">
+              {metodoUsado === 'YAPE' && <Smartphone size={13} color={t.textSecondary} strokeWidth={2.2} />}
+              {metodoUsado === 'EFECTIVO' && <Banknote size={13} color={t.textSecondary} strokeWidth={2.2} />}
+              <Text className="text-xs font-bold" style={{ color: t.textSecondary }}>
                 {metodoUsado === 'YAPE' ? 'Pagó por Yape' : metodoUsado === 'EFECTIVO' ? 'Pagó en efectivo' : ''}
               </Text>
             </View>
             <Pressable
               onPress={() => (esParallevar ? setCompletada(false) : router.back())}
-              className="w-full bg-[#4D7C4D] rounded-full py-4 items-center active:opacity-80"
+              className="w-full rounded-full py-4 items-center active:opacity-80"
+              style={{ backgroundColor: t.success }}
             >
-              <Text className="text-[#F7F2E9] font-bold text-base">Listo</Text>
+              <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Listo</Text>
             </Pressable>
           </Animated.View>
         </View>

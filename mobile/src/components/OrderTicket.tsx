@@ -14,12 +14,15 @@ import ReanimatedSwipeable, {
 import { Trash2 } from 'lucide-react-native';
 import { Order, OrderItem, Dish, OrderStatus } from '../types';
 import { useLetrasCocina } from '../context/LetrasCocina';
+import { useTema } from '../context/TemaContext';
 
 type Props = {
   order: Order;
   dishes: Dish[];
   onDelivered: (orderId: string) => void;
   onIniciar?: (orderId: string) => void;
+  onCancelar?: (orderId: string) => void;
+  onUrgente?: (orderId: string) => void;
   onDelete?: (orderId: string) => void;
   soloExtras?: boolean;
 };
@@ -28,6 +31,14 @@ const PAPER = '#FBF7EE';
 const PAPER_EXTRAS = '#EAE2F8';
 const TINTA = '#2B2420';
 const ROJO = '#8F1D12';
+
+const SOMBRA_URGENTE = {
+  shadowColor: '#D4432B',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.45,
+  shadowRadius: 12,
+  elevation: 12,
+};
 
 function hapticImpact(style: Haptics.ImpactFeedbackStyle) {
   if (Platform.OS === 'web') return;
@@ -84,11 +95,15 @@ function ContenidoHojita({
   order,
   dishes,
   onIniciar,
+  onCancelar,
+  onUrgente,
   soloExtras,
 }: {
   order: Order;
   dishes: Dish[];
   onIniciar?: (orderId: string) => void;
+  onCancelar?: (orderId: string) => void;
+  onUrgente?: (orderId: string) => void;
   soloExtras?: boolean;
 }) {
   const chip = chipEstado(order.status);
@@ -111,16 +126,14 @@ function ContenidoHojita({
           />
         ))}
       </View>
-      <View className="pointer-events-none absolute top-0 bottom-3 left-5" style={{ width: 1, backgroundColor: '#6C4FBF', opacity: esHojaExtras ? 0.45 : 0.6 }} />
-      <View className="pointer-events-none absolute top-1 right-2 bottom-3" style={{ width: 2, backgroundColor: '#6C4FBF', opacity: esHojaExtras ? 0.3 : 0.35 }} />
 
-      <View className="flex-row items-center justify-between mb-1.5">
-        <View className="flex-row items-center gap-1.5">
+      <View className="flex-row items-center justify-between mb-1.5 gap-2">
+        <View className="flex-row items-center gap-1.5 flex-wrap flex-shrink">
           {esHojaExtras && (
             <View className="bg-[#6C4FBF] rounded px-1.5 py-0.5">
               <Text
                 className="text-[#F7F2E9] font-extrabold"
-                style={{ fontSize: t(14),  }}
+                style={{ fontSize: t(14) }}
               >
                 EXTRA
               </Text>
@@ -132,6 +145,16 @@ function ContenidoHojita({
           >
             {esParallevar ? '🥡 Para llevar' : `Mesa ${order.tableNumber}`}
           </Text>
+          {order.urgente && (
+            <View className="bg-[#D4432B] rounded-full px-2 py-0.5">
+              <Text
+                className="text-[#F7F2E9] font-extrabold"
+                style={{ fontSize: t(14), fontFamily: fuenteValor }}
+              >
+                🛎️ URGENTE
+              </Text>
+            </View>
+          )}
           {order.edited && (
             <View className="bg-[#E8A33D] rounded-full px-2 py-0.5">
               <Text
@@ -154,6 +177,36 @@ function ContenidoHojita({
                 style={{ fontSize: t(16), fontFamily: fuenteValor }}
               >
                 👨‍🍳 Cocinar
+              </Text>
+            </Pressable>
+          )}
+          {order.status === 'IN_PREPARATION' && onCancelar && (
+            <Pressable
+              onPress={() => onCancelar(order.id)}
+              className="rounded-full px-2 py-1 border border-dashed border-[#A86E16]/70 bg-[#E8A33D]/20"
+            >
+              <Text
+                className="text-[#A86E16] font-bold"
+                style={{ fontSize: t(16), fontFamily: fuenteValor }}
+              >
+                ↩️ Cancelar
+              </Text>
+            </Pressable>
+          )}
+          {onUrgente && (order.status === 'PENDING' || order.status === 'IN_PREPARATION') && (
+            <Pressable
+              onPress={() => onUrgente(order.id)}
+              className={`rounded-full px-2 py-1 ${
+                order.urgente
+                  ? 'bg-[#D4432B]'
+                  : 'border border-dashed border-[#D4432B]/70 bg-[#D4432B]/15'
+              }`}
+            >
+              <Text
+                className={`font-bold ${order.urgente ? 'text-[#F7F2E9]' : 'text-[#D4432B]'}`}
+                style={{ fontSize: t(16), fontFamily: fuenteValor }}
+              >
+                🛎️ Urgente
               </Text>
             </Pressable>
           )}
@@ -186,7 +239,6 @@ function ContenidoHojita({
               style={{ fontSize: t(24), fontFamily: fuenteValor }}
             >
               <Text className="font-extrabold">{item.quantity}x </Text>
-              {item.esExtra && '✦ '}
               {item.name}
             </Text>
             {item.paraLlevar && (
@@ -219,7 +271,7 @@ function ContenidoHojita({
               className="text-[#D4432B] font-bold"
               style={{ fontSize: t(16), fontFamily: fuenteValor }}
             >
-              PARA LLEVAR · tapero +S/ {(item.taperoPrecio ?? 1).toFixed(2)}
+              PARA LLEVAR · taper +S/ {(item.taperoPrecio ?? 1).toFixed(2)}
             </Text>
           )}
           {item.notes && (
@@ -268,13 +320,14 @@ function ContenidoHojita({
   );
 }
 
-export function OrderTicket({ order, dishes, onDelivered, onIniciar, onDelete, soloExtras }: Props) {
+export function OrderTicket({ order, dishes, onDelivered, onIniciar, onCancelar, onUrgente, onDelete, soloExtras }: Props) {
   const tear = useSharedValue(0);
   const rasgoRef = useRef(false);
   const swipeableRef = useRef<ElementRef<typeof ReanimatedSwipeable>>(null);
   const esHojaExtras = soloExtras;
   const papel = esHojaExtras ? PAPER_EXTRAS : PAPER;
   const { t, fuenteValor } = useLetrasCocina();
+  const { temaId } = useTema();
   const puedeBorrar =
     Boolean(onDelete) &&
     (order.status === 'PENDING' || order.status === 'IN_PREPARATION');
@@ -356,7 +409,16 @@ export function OrderTicket({ order, dishes, onDelivered, onIniciar, onDelete, s
         if (direction === SwipeDirection.RIGHT) rasgar();
       }}
     >
-      <View className="relative mb-4">
+      <View
+        className={`relative mb-4 border-[3px] rounded-lg ${
+          order.urgente
+            ? 'border-[#D4432B]'
+            : temaId === 'claro'
+              ? 'border-[#1E1A17]'
+              : 'border-transparent'
+        }`}
+        style={order.urgente ? SOMBRA_URGENTE : undefined}
+      >
         <View className="absolute inset-0 rounded-lg" style={{ backgroundColor: papel }}>
           <View className="flex-1 items-center justify-center px-6">
             <Text
@@ -373,7 +435,14 @@ export function OrderTicket({ order, dishes, onDelivered, onIniciar, onDelete, s
           className="relative rounded-t-lg overflow-hidden"
         >
           <View style={{ backgroundColor: papel }}>
-            <ContenidoHojita order={order} dishes={dishes} onIniciar={onIniciar} soloExtras={soloExtras} />
+            <ContenidoHojita
+              order={order}
+              dishes={dishes}
+              onIniciar={onIniciar}
+              onCancelar={onCancelar}
+              onUrgente={onUrgente}
+              soloExtras={soloExtras}
+            />
           </View>
         </Animated.View>
 
@@ -383,7 +452,14 @@ export function OrderTicket({ order, dishes, onDelivered, onIniciar, onDelete, s
           className="absolute left-0 right-0 top-0 overflow-hidden rounded-t-lg"
         >
           <View style={{ backgroundColor: papel }}>
-            <ContenidoHojita order={order} dishes={dishes} onIniciar={onIniciar} soloExtras={soloExtras} />
+            <ContenidoHojita
+              order={order}
+              dishes={dishes}
+              onIniciar={onIniciar}
+              onCancelar={onCancelar}
+              onUrgente={onUrgente}
+              soloExtras={soloExtras}
+            />
           </View>
         </Animated.View>
 

@@ -17,6 +17,7 @@ import { OrdersGateway } from './orders.gateway';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderItemsDto } from './dto/update-order-items.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateUrgenteDto } from './dto/update-urgente.dto';
 import { JwtAuthGuard, JwtUser } from '../auth/guards/jwt-auth.guard';
 
 function verificarRol(user: JwtUser, rolesPermitidos: string[]) {
@@ -73,6 +74,18 @@ export class OrdersController {
     const res = await this.ordersService.remove(id, owner);
     this.ordersGateway.emitOrderDeleted(id);
     return res;
+  }
+
+  @Patch(':id/urgente')
+  async updateUrgente(
+    @Request() req: { user: JwtUser },
+    @Param('id') id: string,
+    @Body() dto: UpdateUrgenteDto,
+  ) {
+    verificarRol(req.user, ['mesero', 'delivery']);
+    const orden = await this.ordersService.setUrgente(id, dto.urgente);
+    this.ordersGateway.emitOrderUpdated(orden);
+    return orden;
   }
 
   @Patch(':id/status')

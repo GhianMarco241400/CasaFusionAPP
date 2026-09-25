@@ -1,5 +1,6 @@
 import { View, Text, TextInput, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useTema } from '../context/TemaContext';
 import { ScalePressable } from './ScalePressable';
 
 export const TAPERO_DEFAULT = 1;
@@ -17,24 +18,37 @@ function haptic() {
 }
 
 export function ParaLlevarCheck({ activo, taperoTexto, onToggle, onTaperoChange }: Props) {
+  const { t } = useTema();
+
   return (
     <View className="mb-4">
       <ScalePressable onPress={() => { haptic(); onToggle(); }} pressedScale={0.98}>
         <View
-          className={`rounded-xl border-2 px-4 py-3 flex-row items-center ${
-            activo ? 'bg-[#D4432B] border-[#D4432B]' : 'bg-[#1E1A17] border-[#3A322B]'
-          }`}
+          className="rounded-xl border-2 px-4 py-3 flex-row items-center"
+          style={{
+            backgroundColor: activo ? t.primary : t.surface,
+            borderColor: activo ? t.primary : t.border,
+          }}
         >
           <Text className="text-base mr-2">🥡</Text>
-          <Text className={`flex-1 font-bold text-sm ${activo ? 'text-[#F7F2E9]' : 'text-[#F7F2E9]'}`}>
+          <Text
+            className="flex-1 font-bold text-sm"
+            style={{ color: activo ? t.onPrimary : t.textPrimary }}
+          >
             Para llevar
           </Text>
           <View
-            className={`w-6 h-6 rounded-full items-center justify-center ${
-              activo ? 'bg-[#F7F2E9]' : 'bg-[#2B2420] border border-[#3A322B]'
-            }`}
+            className="w-6 h-6 rounded-full items-center justify-center"
+            style={{
+              backgroundColor: activo ? t.onPrimary : 'transparent',
+              borderColor: activo ? t.onPrimary : t.border,
+              borderWidth: activo ? 0 : 1,
+            }}
           >
-            <Text className={`text-xs font-bold leading-none ${activo ? 'text-[#D4432B]' : 'text-[#8C7F6E]'}`}>
+            <Text
+              className="text-xs font-bold leading-none"
+              style={{ color: activo ? t.primary : t.textSecondary }}
+            >
               {activo ? '✓' : ''}
             </Text>
           </View>
@@ -43,12 +57,15 @@ export function ParaLlevarCheck({ activo, taperoTexto, onToggle, onTaperoChange 
 
       {activo && (
         <View className="flex-row items-center justify-end mt-2 gap-2">
-          <Text className="text-[#F7F2E9] text-sm">Tapero +S/</Text>
+          <Text className="text-sm" style={{ color: t.textPrimary }}>
+            Taper +S/
+          </Text>
           <TextInput
-            className="bg-[#1E1A17] rounded-xl text-[#F7F2E9] text-base px-3 py-2 w-20 text-center"
+            className="rounded-xl text-base px-3 py-2 w-20 text-center"
+            style={{ backgroundColor: t.surface, color: t.textPrimary, borderColor: t.border, borderWidth: 1 }}
             keyboardType="decimal-pad"
             placeholder="1"
-            placeholderTextColor="#8C7F6E"
+            placeholderTextColor={t.textSecondary}
             value={taperoTexto}
             onChangeText={onTaperoChange}
           />

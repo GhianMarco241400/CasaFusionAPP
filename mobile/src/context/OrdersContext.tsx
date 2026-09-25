@@ -5,6 +5,7 @@ import {
   createOrder,
   updateOrderStatus,
   updateOrderItems as apiUpdateOrderItems,
+  updateOrderUrgente as apiUpdateUrgente,
   deleteOrder as apiDeleteOrder,
   completeTable as apiCompleteTable,
   completeOrder as apiCompleteOrder,
@@ -24,11 +25,13 @@ import { useAuth } from './AuthContext';
 type OrdersContextType = {
   orders: Order[];
   loading: boolean;
-  addOrder: (tableNumber: number, items: OrderItem[], cliente?: DatosCliente) => Promise<boolean>;
+  addOrder: (tableNumber: number, items: OrderItem[], cliente?: DatosCliente, urgente?: boolean) => Promise<boolean>;
   updateOrderItems: (orderId: string, items: OrderItem[]) => Promise<boolean>;
   deleteOrder: (orderId: string) => Promise<boolean>;
   markReady: (orderId: string) => void;
   markPreparation: (orderId: string) => void;
+  markPending: (orderId: string) => void;
+  setUrgente: (orderId: string, urgente: boolean) => void;
   completeTable: (tableNumber: number, metodoPago: MetodoPago) => Promise<DailyReport | null>;
   completeOrder: (orderId: string, metodoPago: MetodoPago) => Promise<DailyReport | null>;
   completeDelivery: (orderId: string, pagoEstado: PagoEstado, metodoPago?: MetodoPago) => Promise<DailyReport | null>;
@@ -95,9 +98,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     tableNumber: number,
     items: OrderItem[],
     cliente?: DatosCliente,
+    urgente?: boolean,
   ): Promise<boolean> {
     try {
-      const orden = await createOrder(tableNumber, items, cliente);
+      const orden = await createOrder(tableNumber, items, cliente, urgente);
       setOrders((prev) => agregarOActualizar(prev, orden));
       return true;
     } catch {
@@ -124,6 +128,24 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       )
     );
     updateOrderStatus(orderId, 'IN_PREPARATION').catch(() => {});
+  }
+
+  function markPending(orderId: string) {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, status: 'PENDING' as const } : order
+      )
+    );
+    updateOrderStatus(orderId, 'PENDING').catch(() => {});
+  }
+
+  function setUrgente(orderId: string, urgente: boolean) {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, urgente } : order
+      )
+    );
+    apiUpdateUrgente(orderId, urgente).catch(() => {});
   }
 
   async function completeTable(
@@ -256,6 +278,8 @@ function getOrdersForTable(tableNumber: number) {
         deleteOrder,
         markReady,
         markPreparation,
+        markPending,
+        setUrgente,
         completeTable,
         completeOrder,
         completeDelivery,

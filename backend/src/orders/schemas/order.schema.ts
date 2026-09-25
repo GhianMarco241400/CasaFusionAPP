@@ -74,6 +74,9 @@ export class Order {
   @Prop({ default: false })
   edited?: boolean;
 
+  @Prop({ type: Boolean, default: false })
+  urgente?: boolean;
+
   @Prop({ required: true })
   items: OrderItem[];
 

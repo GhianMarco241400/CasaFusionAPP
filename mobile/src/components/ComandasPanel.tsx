@@ -6,6 +6,8 @@ import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { getMisComandas } from '../services/reports';
 import { Sale } from '../types';
+import { useTema } from '../context/TemaContext';
+import { alpha } from '../theme/temas';
 import { ScalePressable } from './ScalePressable';
 
 const FORMATO_FECHA = {
@@ -27,6 +29,7 @@ function etiquetaVenta(venta: Sale): string {
 }
 
 function DetalleVenta({ venta, indice }: { venta: Sale; indice: number }) {
+  const { t } = useTema();
   const metodo = venta.metodoPago ?? null;
   const numComandas = venta.orders.length;
   const numItems = venta.orders.reduce(
@@ -37,55 +40,57 @@ function DetalleVenta({ venta, indice }: { venta: Sale; indice: number }) {
   return (
     <Animated.View
       entering={SlideInRight.delay(indice * 45).duration(260)}
-      className="mb-2.5 rounded-2xl bg-[#1E1A17] border border-[#3A322B] overflow-hidden"
+      className="mb-2.5 rounded-2xl border overflow-hidden"
+      style={{ backgroundColor: t.surface, borderColor: t.border }}
     >
       <View className="px-3.5 pt-3 pb-2.5">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-2 flex-1">
-            <View className="w-8 h-8 rounded-full bg-[#2B2420] items-center justify-center">
+            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: t.surface }}>
               <Feather
                 name={venta.canal === 'delivery' ? 'truck' : 'shopping-bag'}
                 size={14}
-                color="#F7F2E9"
+                color={t.textPrimary}
               />
             </View>
-            <Text className="text-[#F7F2E9] font-bold text-sm flex-1">
+            <Text className="font-bold text-sm flex-1" style={{ color: t.textPrimary }}>
               {etiquetaVenta(venta)}
             </Text>
           </View>
           {metodo && (
-            <View className="flex-row items-center gap-1 self-start bg-[#4D7C4D]/15 rounded-full px-2.5 py-1">
+            <View className="flex-row items-center gap-1 self-start rounded-full px-2.5 py-1" style={{ backgroundColor: alpha(t.success, 15) }}>
               <Feather
                 name={metodo === 'YAPE' ? 'smartphone' : 'dollar-sign'}
                 size={11}
-                color="#4D7C4D"
+                color={t.success}
               />
-              <Text className="text-[#4D7C4D] text-[11px] font-bold">
+              <Text className="text-[11px] font-bold" style={{ color: t.success }}>
                 {metodo === 'YAPE' ? 'Yape' : 'Efectivo'}
               </Text>
             </View>
           )}
         </View>
 
-        <Text className="text-[#8C7F6E] text-[11px] mt-1.5">
+        <Text className="text-[11px] mt-1.5" style={{ color: t.textSecondary }}>
           {fechaVenta(venta.completedAt)} · {numItems} ítems ·{' '}
           {numComandas} {numComandas === 1 ? 'comanda' : 'comandas'}
         </Text>
 
-        <View className="h-px bg-[#3A322B] mt-2.5 mb-1" />
+        <View className="h-px mt-2.5 mb-1" style={{ backgroundColor: t.border }} />
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-3">
             {venta.orders.flatMap((o) => o.items).slice(0, 3).map((item, i) => (
               <Text
                 key={i}
-                className="text-[#8C7F6E] text-[11px] leading-tight"
+                className="text-[11px] leading-tight"
                 numberOfLines={1}
+                style={{ color: t.textSecondary }}
               >
                 {item.quantity}× {item.name}
               </Text>
             ))}
           </View>
-          <Text className="text-[#F7F2E9] font-extrabold">
+          <Text className="font-extrabold" style={{ color: t.textPrimary }}>
             S/ {venta.total.toFixed(2)}
           </Text>
         </View>
@@ -100,6 +105,7 @@ export function ComandasPanel({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { t } = useTema();
   const { data, isLoading } = useQuery({
     queryKey: ['mis-comandas'],
     queryFn: getMisComandas,
@@ -111,40 +117,40 @@ export function ComandasPanel({
   return (
     <View className="absolute inset-0" style={{ zIndex: 50, elevation: 50 }}>
       <Pressable className="flex-1" onPress={onClose}>
-        <View className="flex-1 bg-[#130F0C]/85" />
+        <View className="flex-1" style={{ backgroundColor: alpha(t.overlay, 85) }} />
       </Pressable>
 
       <Animated.View
         entering={SlideInRight.springify().damping(17).stiffness(180)}
-        className="absolute right-0 top-14 w-[60%] rounded-l-3xl overflow-hidden bg-[#1B1714] border border-[#3A322B]"
-        style={{ bottom: insets.bottom + 16, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } }}
+        className="absolute right-0 top-14 w-[60%] rounded-l-3xl overflow-hidden border"
+        style={{ bottom: insets.bottom + 16, backgroundColor: t.surfaceElevated, borderColor: t.border, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } }}
       >
         <Animated.View entering={FadeIn.duration(200)} style={{ flex: 1 }}>
           <View className="px-5 pt-5 pb-4 flex-row items-center justify-between">
             <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-full bg-[#D4432B] items-center justify-center">
-                <Feather name="file-text" size={18} color="#F7F2E9" />
+              <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: t.primary }}>
+                <Feather name="file-text" size={18} color={t.onPrimary} />
               </View>
               <View>
-                <Text className="text-[#F7F2E9] font-extrabold text-lg">
+                <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>
                   Mis comandas
                 </Text>
-                <Text className="text-[#8C7F6E] text-[11px] -mt-0.5">
+                <Text className="text-[11px] -mt-0.5" style={{ color: t.textSecondary }}>
                   Registro de ventas cobradas
                 </Text>
               </View>
             </View>
             <ScalePressable onPress={onClose} pressedScale={0.9} hitSlop={8}>
-              <View className="w-9 h-9 rounded-full bg-[#2B2420] items-center justify-center">
-                <Feather name="x" size={18} color="#8C7F6E" />
+              <View className="w-9 h-9 rounded-full items-center justify-center" style={{ backgroundColor: t.surface }}>
+                <Feather name="x" size={18} color={t.textSecondary} />
               </View>
             </ScalePressable>
           </View>
-          <View className="h-px bg-[#3A322B]" />
+          <View className="h-px" style={{ backgroundColor: t.border }} />
 
           {isLoading ? (
             <View className="flex-1 items-center justify-center">
-              <Text className="text-[#8C7F6E] text-sm">Cargando…</Text>
+              <Text className="text-sm" style={{ color: t.textSecondary }}>Cargando…</Text>
             </View>
           ) : (
             <FlatList
@@ -156,10 +162,10 @@ export function ComandasPanel({
               contentContainerStyle={{ padding: 14, paddingBottom: 16 }}
               ListEmptyComponent={
                 <View className="items-center py-16 px-6">
-                  <View className="w-14 h-14 rounded-full bg-[#2B2420] items-center justify-center mb-3">
-                    <Feather name="inbox" size={24} color="#8C7F6E" />
+                  <View className="w-14 h-14 rounded-full items-center justify-center mb-3" style={{ backgroundColor: t.surface }}>
+                    <Feather name="inbox" size={24} color={t.textSecondary} />
                   </View>
-                  <Text className="text-[#8C7F6E] text-sm text-center">
+                  <Text className="text-sm text-center" style={{ color: t.textSecondary }}>
                     Aún no tienes comandas cobradas
                   </Text>
                 </View>

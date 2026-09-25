@@ -15,6 +15,7 @@ import ReanimatedSwipeable, {
 import { Trash2 } from 'lucide-react-native';
 import { Order, OrderItem, OrderStatus } from '../types';
 import { useLetrasCocina } from '../context/LetrasCocina';
+import { useTema } from '../context/TemaContext';
 
 type Modo = 'cocina' | 'delivery';
 
@@ -24,6 +25,8 @@ type Props = {
   accion: (orderId: string) => void;
   onPressEditar?: () => void;
   onIniciar?: () => void;
+  onCancelar?: () => void;
+  onUrgente?: (orderId: string) => void;
   onDelete?: (orderId: string) => void;
   enviando?: boolean;
   soloExtras?: boolean;
@@ -35,6 +38,14 @@ const PAPEL_EXTRAS = '#EAE2F8';
 const SOMBRA_EXTRAS = '#DCC8F5';
 const TINTA = '#1E1A17';
 const ROJO = '#8F1D12';
+
+const SOMBRA_URGENTE = {
+  shadowColor: '#D4432B',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.45,
+  shadowRadius: 12,
+  elevation: 12,
+};
 
 function hapticImpact(style: Haptics.ImpactFeedbackStyle) {
   if (Platform.OS === 'web') return;
@@ -81,12 +92,18 @@ function ContenidoPosit({
   order,
   mostrarIniciar,
   onIniciar,
+  mostrarCancelar,
+  onCancelar,
+  onUrgente,
   soloExtras,
   grande,
 }: {
   order: Order;
   mostrarIniciar: boolean;
   onIniciar?: () => void;
+  mostrarCancelar?: boolean;
+  onCancelar?: () => void;
+  onUrgente?: (orderId: string) => void;
   soloExtras?: boolean;
   grande?: boolean;
 }) {
@@ -121,32 +138,34 @@ function ContenidoPosit({
           pointerEvents="none"
         />
 
-        <View className="flex-row items-start justify-between mb-1.5">
-          <View className="flex-1 pr-2">
-            <View className="flex-row items-center gap-1.5">
-              {esHojaExtras && (
-                <View className="bg-[#6C4FBF] rounded px-1.5 py-0.5">
-                  <Text
-                    className="text-[#F7F2E9] font-extrabold"
-                    style={{ fontSize: fs(14, 10), fontFamily: fam }}
-              >
-                EXTRA
-              </Text>
-            </View>
-          )}
-          <Text
-                className="text-[#1E1A17] font-extrabold leading-tight"
-                style={{ fontSize: fs(24, 18), fontFamily: fam }}
-              >
-                🛵 {cliente}
-              </Text>
-            </View>
+        <View className="flex-row items-center justify-between mb-1.5 gap-2">
+          <View className="flex-1 flex-row items-center gap-1.5 flex-wrap flex-shrink pr-2">
+            {esHojaExtras && (
+              <View className="bg-[#6C4FBF] rounded px-1.5 py-0.5">
+                <Text
+                  className="text-[#F7F2E9] font-extrabold"
+                  style={{ fontSize: fs(14, 10), fontFamily: fam }}
+                >
+                  EXTRA
+                </Text>
+              </View>
+            )}
             <Text
-              className="text-[#1E1A17]/60 font-semibold mt-0.5"
-              style={{ fontSize: fs(16, 12), fontFamily: fam }}
+              className="text-[#1E1A17] font-extrabold leading-tight flex-shrink"
+              style={{ fontSize: fs(30, 18), fontFamily: fam }}
             >
-              {order.canal ? 'Delivery' : ''} · {horaLima(order.createdAt)}
+              🛵 {cliente}
             </Text>
+            {order.urgente && (
+              <View className="bg-[#D4432B] rounded px-1.5 py-0.5">
+                <Text
+                  className="text-[#F7F2E9] font-extrabold"
+                  style={{ fontSize: fs(14, 10), fontFamily: fam }}
+                >
+                  🛎️ URGENTE
+                </Text>
+              </View>
+            )}
           </View>
           <View className="flex-row items-center gap-1.5">
             {mostrarIniciar && onIniciar && (
@@ -165,6 +184,42 @@ function ContenidoPosit({
                 </Text>
               </Pressable>
             )}
+            {mostrarCancelar && onCancelar && (
+              <Pressable
+                onPress={() => {
+                  hapticImpact(Haptics.ImpactFeedbackStyle.Light);
+                  onCancelar();
+                }}
+                className="rounded-full px-2 py-1 border border-dashed border-[#B87E1E] bg-[#E8A33D]/25"
+              >
+                <Text
+                  className="text-[#8A5A10] font-bold"
+                  style={{ fontSize: fs(16, 10), fontFamily: fam }}
+                >
+                  ↩️ Cancelar
+                </Text>
+              </Pressable>
+            )}
+            {onUrgente && (order.status === 'PENDING' || order.status === 'IN_PREPARATION') && (
+              <Pressable
+                onPress={() => {
+                  hapticImpact(Haptics.ImpactFeedbackStyle.Light);
+                  onUrgente(order.id);
+                }}
+                className={`rounded-full px-2 py-1 ${
+                  order.urgente
+                    ? 'bg-[#D4432B]'
+                    : 'border border-dashed border-[#D4432B]/70 bg-[#D4432B]/15'
+                }`}
+              >
+                <Text
+                  className={`font-bold ${order.urgente ? 'text-[#F7F2E9]' : 'text-[#D4432B]'}`}
+                  style={{ fontSize: fs(16, 10), fontFamily: fam }}
+                >
+                  🛎️ Urgente
+                </Text>
+              </Pressable>
+            )}
             <View className={`rounded-full px-2 py-1 ${chip.cls}`}>
               <Text
                 className={`font-bold ${chip.txt}`}
@@ -175,6 +230,12 @@ function ContenidoPosit({
             </View>
           </View>
         </View>
+        <Text
+          className="text-[#1E1A17]/60 font-semibold mb-1"
+          style={{ fontSize: fs(16, 12), fontFamily: fam }}
+        >
+          {order.canal ? 'Delivery' : ''} · {horaLima(order.createdAt)}
+        </Text>
 
         {(order.telefono || order.direccion) && (
           <View className="mb-2">
@@ -204,8 +265,8 @@ function ContenidoPosit({
           <View key={i} className="mb-1.5">
             <View className="flex-row items-center gap-1.5">
               <Text
-                className="text-[#1E1A17] flex-shrink"
-                style={{ fontSize: fs(20, 16), fontFamily: fam }}
+                className={`${item.esExtra ? 'text-[#6C4FBF] font-extrabold' : 'text-[#1E1A17]'} flex-shrink`}
+                style={{ fontSize: fs(24, 16), fontFamily: fam }}
               >
                 <Text className="font-extrabold">{item.quantity}x </Text>
                 {item.name}
@@ -219,7 +280,7 @@ function ContenidoPosit({
                   className={`font-bold ${
                     item.paraLlevar ? 'text-[#C93E26]' : 'text-[#1E1A17]/70'
                   }`}
-                  style={{ fontSize: fs(14, 10), fontFamily: fam }}
+                  style={{ fontSize: fs(16, 10), fontFamily: fam }}
                 >
                   {item.paraLlevar ? `🥡 taper +S/ ${(item.taperoPrecio ?? 1).toFixed(2)}` : '🍽 en plato'}
                 </Text>
@@ -228,15 +289,15 @@ function ContenidoPosit({
             {item.entrada && (
               <Text
                 className="text-[#1E1A17]/60"
-                style={{ fontSize: fs(18, 14), fontFamily: fam }}
+                style={{ fontSize: fs(20, 14), fontFamily: fam }}
               >
                 + {item.entrada.name}
               </Text>
             )}
             {item.entradaPersonalizada && (
               <Text
-                className="text-[#1E1A17]/60"
-                style={{ fontSize: fs(18, 14), fontFamily: fam }}
+                className="text-[#6C4FBF]"
+                style={{ fontSize: fs(20, 14), fontFamily: fam }}
               >
                 + {item.entradaPersonalizada.name} · S/ {item.entradaPersonalizada.price.toFixed(2)}
               </Text>
@@ -244,7 +305,7 @@ function ContenidoPosit({
             {item.notes ? (
               <Text
                 className="text-[#3F6E3F] font-semibold"
-                style={{ fontSize: fs(18, 14), fontFamily: fam }}
+                style={{ fontSize: fs(20, 14), fontFamily: fam }}
               >
                 📝 {item.notes}
               </Text>
@@ -255,12 +316,12 @@ function ContenidoPosit({
         <View className="flex-row items-end justify-between mt-1.5">
           <Text
             className="text-[#1E1A17]/60 uppercase tracking-wide"
-            style={{ fontSize: fs(14, 10), fontFamily: fam }}
+            style={{ fontSize: fs(16, 10), fontFamily: fam }}
           >
             {esHojaExtras
               ? 'Extras de la comanda'
               : taperos > 0
-                ? `Incluye tapero +S/ ${taperos.toFixed(2)}`
+                ? `Incluye taper +S/ ${taperos.toFixed(2)}`
                 : 'Total a cobrar'}
           </Text>
           <Text
@@ -275,13 +336,14 @@ function ContenidoPosit({
   );
 }
 
-export function Posit({ order, modo, accion, onPressEditar, onIniciar, onDelete, enviando, soloExtras }: Props) {
+export function Posit({ order, modo, accion, onPressEditar, onIniciar, onCancelar, onUrgente, onDelete, enviando, soloExtras }: Props) {
   const confirmado = useSharedValue(0);
   const hechoRef = useRef(false);
   const swipeableRef = useRef<ElementRef<typeof ReanimatedSwipeable>>(null);
   const esHojaExtras = soloExtras;
   const sombraFondo = esHojaExtras ? SOMBRA_EXTRAS : AMARILLO_OSCURO;
   const { t, fuenteValor } = useLetrasCocina();
+  const { temaId } = useTema();
 
   const fondoAnim = useAnimatedStyle(() => ({
     opacity: confirmado.value,
@@ -296,9 +358,11 @@ export function Posit({ order, modo, accion, onPressEditar, onIniciar, onDelete,
       : null;
   const mostrarIniciar =
     esCocina && order.status === 'PENDING' && Boolean(onIniciar);
+  const mostrarCancelar =
+    esCocina && order.status === 'IN_PREPARATION' && Boolean(onCancelar);
   const puedeBorrar =
     Boolean(onDelete) &&
-    (order.status === 'PENDING' || order.status === 'IN_PREPARATION');
+    (order.status === 'PENDING' || (esCocina && order.status === 'IN_PREPARATION'));
 
   function borrar() {
     if (!onDelete) return;
@@ -326,7 +390,16 @@ export function Posit({ order, modo, accion, onPressEditar, onIniciar, onDelete,
 
   const contenido = (
     <View className="mb-4" style={{ transform: [{ rotate: rotacion }] }}>
-      <View className="rounded-sm overflow-hidden relative">
+      <View
+        className={`rounded-sm overflow-hidden relative border-[3px] ${
+          order.urgente
+            ? 'border-[#D4432B]'
+            : temaId === 'claro'
+              ? 'border-[#1E1A17]'
+              : 'border-transparent'
+        }`}
+        style={order.urgente ? SOMBRA_URGENTE : undefined}
+      >
         <View className="absolute inset-0" style={{ backgroundColor: sombraFondo }} />
         <Animated.View style={[fondoAnim]} className="absolute inset-0 items-center justify-center">
           <Text
@@ -341,6 +414,9 @@ export function Posit({ order, modo, accion, onPressEditar, onIniciar, onDelete,
             order={order}
             mostrarIniciar={mostrarIniciar}
             onIniciar={onIniciar}
+            mostrarCancelar={mostrarCancelar}
+            onCancelar={onCancelar}
+            onUrgente={onUrgente}
             soloExtras={soloExtras}
             grande={grande}
           />
@@ -349,16 +425,12 @@ export function Posit({ order, modo, accion, onPressEditar, onIniciar, onDelete,
     </View>
   );
 
-  if (esTapEditable) {
-    return (
-      <Pressable onPress={onPressEditar}>
-        {contenido}
-      </Pressable>
-    );
-  }
+  const children = esTapEditable ? (
+    <Pressable onPress={onPressEditar}>{contenido}</Pressable>
+  ) : contenido;
 
-  if (!accionCercana) {
-    return contenido;
+  if (!accionCercana && !puedeBorrar) {
+    return children;
   }
 
   function renderLeftActions() {
@@ -394,7 +466,7 @@ export function Posit({ order, modo, accion, onPressEditar, onIniciar, onDelete,
   return (
     <ReanimatedSwipeable
       ref={swipeableRef}
-      renderLeftActions={renderLeftActions}
+      renderLeftActions={accionCercana ? renderLeftActions : undefined}
       renderRightActions={puedeBorrar ? renderRightActions : undefined}
       overshootLeft={false}
       overshootRight={false}
@@ -402,11 +474,15 @@ export function Posit({ order, modo, accion, onPressEditar, onIniciar, onDelete,
       enabled={!enviando}
       onSwipeableOpen={(direction) => {
         if (direction !== SwipeDirection.RIGHT) return;
+        if (!accionCercana) {
+          swipeableRef.current?.close();
+          return;
+        }
         ejecutar();
         swipeableRef.current?.close();
       }}
     >
-      {contenido}
+      {children}
     </ReanimatedSwipeable>
   );
 }
