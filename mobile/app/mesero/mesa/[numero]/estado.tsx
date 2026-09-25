@@ -18,6 +18,7 @@ import { Platform } from 'react-native';
 import { Order, OrderStatus, MetodoPago } from '../../../../src/types';
 import { useOrders } from '../../../../src/context/OrdersContext';
 import { ScalePressable } from '../../../../src/components/ScalePressable';
+import QrYape from '../../../../src/components/QrYape';
 import { useTema } from '../../../../src/context/TemaContext';
 import { alpha, TemaTokens } from '../../../../src/theme/temas';
 import {
@@ -406,6 +407,7 @@ export default function EstadoMesaScreen() {
   const [cobro, setCobro] = useState<
     null | { tipo: 'mesa' } | { tipo: 'comanda'; order: Order }
   >(null);
+  const [verQr, setVerQr] = useState(false);
 
   const todasListas = comandas.length > 0 && comandas.every((o) => o.status === 'READY');
   const pendientes = comandas.filter((o) => o.status !== 'READY').length;
@@ -430,23 +432,30 @@ export default function EstadoMesaScreen() {
     ]);
   }
 
+  function cerrarCobro() {
+    setCobro(null);
+    setVerQr(false);
+  }
+
   function completarMesa() {
     if (completando) return;
     hapticImpact(Haptics.ImpactFeedbackStyle.Medium);
+    setVerQr(false);
     setCobro({ tipo: 'mesa' });
   }
 
   function cobrarComanda(order: Order) {
     if (completando) return;
     hapticImpact(Haptics.ImpactFeedbackStyle.Medium);
+    setVerQr(false);
     setCobro({ tipo: 'comanda', order });
   }
 
-  async function ejecutarCobro(metodo: MetodoPago) {
+  async function registrarCobro(metodo: MetodoPago) {
     if (completando) return;
     const ordenCobrar = cobro?.tipo === 'comanda' ? cobro.order : null;
     const total = ordenCobrar ? ordenCobrar.total : totalMesa;
-    setCobro(null);
+    cerrarCobro();
     hapticImpact(Haptics.ImpactFeedbackStyle.Medium);
     setTotalCobrado(total);
     setMetodoUsado(metodo);
@@ -464,6 +473,18 @@ export default function EstadoMesaScreen() {
     }
     hapticSuccess();
     setCompletada(true);
+  }
+
+  // Yape pide ver el QR antes de registrar la venta, para no cerrar la mesa
+  // si el cliente todavía no pagó.
+  function ejecutarCobro(metodo: MetodoPago) {
+    if (completando) return;
+    if (metodo === 'YAPE') {
+      hapticImpact(Haptics.ImpactFeedbackStyle.Medium);
+      setVerQr(true);
+      return;
+    }
+    registrarCobro(metodo);
   }
 
   return (
@@ -587,48 +608,81 @@ export default function EstadoMesaScreen() {
 
       <Modal visible={cobro !== null} transparent animationType="none">
         <View className="flex-1 items-center justify-center px-8" style={{ backgroundColor: alpha(t.overlay, 70) }}>
-          <View
-            className={`rounded-3xl p-6 w-full max-w-sm items-center ${
-              temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
-            }`}
-            style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
-          >
-            <Text className="text-lg font-extrabold mb-1" style={{ color: t.textPrimary }}>
-              ¿Cómo pagó el cliente?
-            </Text>
-            <Text className="text-sm mb-3" style={{ color: t.textSecondary }}>
-              S/ {cobroTotal.toFixed(2)} · Se cerrará y entrará al reporte del día
-            </Text>
-            <ScalePressable
-              onPress={() => ejecutarCobro('YAPE')}
-              pressedScale={0.97}
-              className="w-full mb-3"
+          {verQr ? (
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              className={`rounded-3xl p-6 w-full max-w-sm items-center ${
+                temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+              }`}
+              style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
             >
-              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: t.yape }}>
+              <Text className="text-lg font-extrabold mb-3" style={{ color: t.textPrimary }}>
+                Cobro por Yape
+              </Text>
+              <QrYape monto={cobroTotal} tamano={196} />
+              <ScalePressable
+                onPress={() => registrarCobro('YAPE')}
+                pressedScale={0.97}
+                className="w-full rounded-2xl py-4 items-center mt-4"
+                style={{ backgroundColor: t.success }}
+              >
                 <View className="flex-row items-center gap-2">
-                  <Smartphone size={18} color={t.onPrimary} strokeWidth={2.2} />
-                  <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Pagó por Yape</Text>
+                  <Check size={18} color={t.onPrimary} strokeWidth={2.4} />
+                  <Text className="font-bold text-base" style={{ color: t.onPrimary }}>
+                    Ya pagó
+                  </Text>
                 </View>
-                <Text className="text-xs mt-0.5" style={{ color: alpha(t.onPrimary, 80) }}>Cuenta como recaudado</Text>
-              </View>
-            </ScalePressable>
-            <ScalePressable
-              onPress={() => ejecutarCobro('EFECTIVO')}
-              pressedScale={0.97}
-              className="w-full mb-3"
+              </ScalePressable>
+              <ScalePressable onPress={() => setVerQr(false)} pressedScale={0.98} className="w-full py-3">
+                <Text className="text-center" style={{ color: t.textSecondary }}>
+                  Volver a métodos de pago
+                </Text>
+              </ScalePressable>
+            </Animated.View>
+          ) : (
+            <View
+              className={`rounded-3xl p-6 w-full max-w-sm items-center ${
+                temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+              }`}
+              style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
             >
-              <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: t.success }}>
-                <View className="flex-row items-center gap-2">
-                  <Banknote size={18} color={t.onPrimary} strokeWidth={2.2} />
-                  <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Pagó en efectivo</Text>
+              <Text className="text-lg font-extrabold mb-1" style={{ color: t.textPrimary }}>
+                ¿Cómo pagó el cliente?
+              </Text>
+              <Text className="text-sm mb-3" style={{ color: t.textSecondary }}>
+                S/ {cobroTotal.toFixed(2)} · Se cerrará y entrará al reporte del día
+              </Text>
+              <ScalePressable
+                onPress={() => ejecutarCobro('YAPE')}
+                pressedScale={0.97}
+                className="w-full mb-3"
+              >
+                <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: t.yape }}>
+                  <View className="flex-row items-center gap-2">
+                    <Smartphone size={18} color={t.onPrimary} strokeWidth={2.2} />
+                    <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Pagó por Yape</Text>
+                  </View>
+                  <Text className="text-xs mt-0.5" style={{ color: alpha(t.onPrimary, 80) }}>Muestra el QR de la casa</Text>
                 </View>
-                <Text className="text-xs mt-0.5" style={{ color: alpha(t.onPrimary, 80) }}>Cuenta como recaudado</Text>
-              </View>
-            </ScalePressable>
-            <ScalePressable onPress={() => setCobro(null)} pressedScale={0.98} className="py-2">
-              <Text className="text-center" style={{ color: t.textSecondary }}>Cancelar</Text>
-            </ScalePressable>
-          </View>
+              </ScalePressable>
+              <ScalePressable
+                onPress={() => ejecutarCobro('EFECTIVO')}
+                pressedScale={0.97}
+                className="w-full mb-3"
+              >
+                <View className="rounded-2xl py-4 items-center" style={{ backgroundColor: t.success }}>
+                  <View className="flex-row items-center gap-2">
+                    <Banknote size={18} color={t.onPrimary} strokeWidth={2.2} />
+                    <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Pagó en efectivo</Text>
+                  </View>
+                  <Text className="text-xs mt-0.5" style={{ color: alpha(t.onPrimary, 80) }}>Cuenta como recaudado</Text>
+                </View>
+              </ScalePressable>
+              <ScalePressable onPress={cerrarCobro} pressedScale={0.98} className="py-2">
+                <Text className="text-center" style={{ color: t.textSecondary }}>Cancelar</Text>
+              </ScalePressable>
+            </View>
+          )}
         </View>
       </Modal>
 
