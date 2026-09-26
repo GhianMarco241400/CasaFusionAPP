@@ -118,6 +118,16 @@ export async function cobrarFiadoManual(
   await api.post(`/reports/cuaderno/${id}/cobrar-fiado-manual`, { metodoPago });
 }
 
+/** Deshace un cobro ya confirmado: el fiado vuelve a quedar por cobrar. */
+export async function revertirCobroFiado(orderId: string): Promise<void> {
+  await api.post(`/reports/fiado/${orderId}/revertir-cobro`);
+}
+
+/** Deshace el cobro de un fiado anotado a mano. */
+export async function revertirCobroFiadoManual(id: string): Promise<void> {
+  await api.post(`/reports/cuaderno/${id}/revertir-cobro-manual`);
+}
+
 export async function eliminarIngresoManual(
   date: string,
   indice: number,
@@ -125,7 +135,7 @@ export async function eliminarIngresoManual(
   await api.delete(`/reports/ingreso-manual/${date}/${indice}`);
 }
 
-export async function eliminarFiadoManual(id: string): Promise<void> {
+export async function eliminarFiado(id: string): Promise<void> {
   await api.delete(`/reports/cuaderno/${id}`);
 }
 

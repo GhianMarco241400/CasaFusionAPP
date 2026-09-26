@@ -19,6 +19,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  MaxLength,
   Min,
 } from 'class-validator';
 import type { Response } from 'express';
@@ -75,7 +76,16 @@ class ErrorAvisoDto {
   desc: string;
 }
 
+class ReabrirCobroDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  motivo: string;
 
+  @IsOptional()
+  @IsIn(['READY', 'IN_PREPARATION'])
+  destino?: 'READY' | 'IN_PREPARATION';
+}
 
 function verificarRol(user: JwtUser, rolesPermitidos: string[]) {
   if (!rolesPermitidos.includes(user.role)) {
@@ -122,6 +132,21 @@ export class ReportsController {
     );
   }
 
+  @Post('reabrir-cobro/:orderId')
+  async reabrirCobro(
+    @Request() req: { user: JwtUser },
+    @Param('orderId') orderId: string,
+    @Body() dto: ReabrirCobroDto,
+  ) {
+    verificarRol(req.user, ['mesero', 'delivery', 'admin']);
+    return this.reportsService.reabrirCobro(
+      orderId,
+      dto.motivo.trim(),
+      dto.destino ?? 'READY',
+      req.user.userId,
+    );
+  }
+
   @Get()
   async getToday(@Request() req: { user: JwtUser }) {
     verificarRol(req.user, ['admin']);
@@ -144,6 +169,15 @@ export class ReportsController {
     return this.reportsService.cobrarFiado(orderId, dto.metodoPago);
   }
 
+  @Post('fiado/:orderId/revertir-cobro')
+  async revertirCobroFiado(
+    @Request() req: { user: JwtUser },
+    @Param('orderId') orderId: string,
+  ) {
+    verificarRol(req.user, ['admin']);
+    return this.reportsService.revertirCobroFiado(orderId, req.user.userId);
+  }
+
   @Post('registro-manual')
   async registroManual(
     @Request() req: { user: JwtUser },
@@ -164,6 +198,15 @@ export class ReportsController {
   ) {
     verificarRol(req.user, ['admin']);
     return this.reportsService.cobrarFiadoManual(id, dto.metodoPago);
+  }
+
+  @Post('cuaderno/:id/revertir-cobro-manual')
+  async revertirCobroFiadoManual(
+    @Request() req: { user: JwtUser },
+    @Param('id') id: string,
+  ) {
+    verificarRol(req.user, ['admin']);
+    return this.reportsService.revertirCobroFiadoManual(id);
   }
 
   @Get('cuaderno')
@@ -208,7 +251,7 @@ export class ReportsController {
     @Param('orderId') orderId: string,
   ) {
     verificarRol(req.user, ['admin']);
-    return this.reportsService.eliminarComanda(orderId);
+    return this.reportsService.eliminarComanda(orderId, req.user.userId);
   }
 
   @Delete('ingreso-manual/:date/:indice')
@@ -218,27 +261,36 @@ export class ReportsController {
     @Param('indice') indice: string,
   ) {
     verificarRol(req.user, ['admin']);
-    return this.reportsService.eliminarIngresoManual(date, Number(indice));
+    return this.reportsService.eliminarIngresoManual(
+      date,
+      Number(indice),
+      req.user.userId,
+    );
   }
 
   @Delete('cuaderno/:id')
-  async eliminarFiadoManual(
+  async eliminarFiado(
     @Request() req: { user: JwtUser },
     @Param('id') id: string,
   ) {
     verificarRol(req.user, ['admin']);
-    return this.reportsService.eliminarFiadoManual(id);
+    return this.reportsService.eliminarFiado(id);
   }
-
 
   @Get('mis-comandas')
   async getMisComandas(@Request() req: { user: JwtUser }) {
-    verificarRol(req.user, ['mesero', 'delivery']);
-    return this.reportsService.getMisComandas(req.user.userId);
+    verificarRol(req.user, ['mesero', 'delivery', 'admin']);
+    return this.reportsService.getMisComandas(
+      req.user.userId,
+      req.user.role === 'admin',
+    );
   }
 
   @Get(':date')
-  async getReport(@Request() req: { user: JwtUser }, @Param('date') date: string) {
+  async getReport(
+    @Request() req: { user: JwtUser },
+    @Param('date') date: string,
+  ) {
     verificarRol(req.user, ['admin']);
     return this.reportsService.getByDate(date);
   }
@@ -255,10 +307,7 @@ export class ReportsController {
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${filename}"`,
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', buffer.byteLength);
     res.send(buffer);
   }

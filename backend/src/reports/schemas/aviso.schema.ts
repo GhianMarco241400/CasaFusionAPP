@@ -2,11 +2,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type AvisoTipo = 'FIADO' | 'ERROR';
+export type AvisoTipo = 'FIADO' | 'ERROR' | 'REAPERTURA';
 
 @Schema({ timestamps: true })
 export class Aviso {
-  @Prop({ required: true, enum: ['FIADO', 'ERROR'] })
+  @Prop({ required: true, enum: ['FIADO', 'ERROR', 'REAPERTURA'] })
   tipo: AvisoTipo;
 
   @Prop({ required: true })
@@ -17,6 +17,9 @@ export class Aviso {
 
   @Prop({ type: String, default: null })
   entidadId?: string | null;
+
+  @Prop({ type: String, default: null })
+  creadoPor?: string | null;
 
   @Prop({ default: false })
   leido: boolean;

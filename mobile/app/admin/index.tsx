@@ -35,9 +35,10 @@ import {
   Receipt,
   FileSpreadsheet,
   Trash2,
+  RotateCcw,
 } from 'lucide-react-native';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { Sale, MetodoPago, OrderItem } from '../../src/types';
+import { Sale, MetodoPago, OrderItem, CuadernoEntrada } from '../../src/types';
 import { useTema } from '../../src/context/TemaContext';
 import { alpha, type TemaTokens } from '../../src/theme/temas';
 import { ScalePressable } from '../../src/components/ScalePressable';
@@ -55,7 +56,9 @@ import {
   registroManual,
   eliminarVenta,
   eliminarIngresoManual,
-  eliminarFiadoManual,
+  eliminarFiado,
+  revertirCobroFiado,
+  revertirCobroFiadoManual,
 } from '../../src/services/reports';
 
 function hapticImpact() {
@@ -350,6 +353,7 @@ export default function AdminScreen() {
   const [errorEliminar, setErrorEliminar] = useState('');
   const [eliminandoIngresoIdx, setEliminandoIngresoIdx] = useState<number | null>(null);
   const [eliminandoFiadoId, setEliminandoFiadoId] = useState<string | null>(null);
+  const [revirtiendoCobroId, setRevirtiendoCobroId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -500,25 +504,61 @@ export default function AdminScreen() {
     }
   }
 
-  function confirmarEliminarFiadoManual(id: string) {
+  function confirmarEliminarFiado(e: CuadernoEntrada) {
     hapticImpact();
-    const fiado = fiadosCuaderno.find((f) => f.id === id);
-    if (!fiado) return;
+    const detalle = `${e.clienteNombre ?? 'Fiado'} · S/ ${e.monto.toFixed(2)}`;
+    const nota = e.orderId
+      ? 'Deja de contar como deuda. El pedido de delivery no se borra.'
+      : 'Deja de contar como deuda.';
+    Alert.alert('Eliminar fiado', `${detalle}\n\n${nota}`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: () => ejecutarEliminarFiado(e.id) },
+    ]);
+  }
+
+  function confirmarRevertirCobro(e: CuadernoEntrada) {
+    hapticImpact();
+    const quien = e.orderId ? 'el pedido' : 'el fiado anotado a mano';
     Alert.alert(
-      'Eliminar fiado',
-      `${fiado.clienteNombre ?? 'Fiado'} · S/ ${fiado.monto.toFixed(2)}`,
+      'Revertir cobro',
+      `Se deshace el cobro de S/ ${e.monto.toFixed(2)}${
+        e.clienteNombre ? ` · ${e.clienteNombre}` : ''
+      }. ${quien} vuelve a quedar por cobrar y sale del reporte.`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: () => ejecutarEliminarFiadoManual(id) },
+        {
+          text: 'Revertir',
+          style: 'destructive',
+          onPress: () => ejecutarRevertirCobro(e),
+        },
       ],
     );
   }
 
-  async function ejecutarEliminarFiadoManual(id: string) {
+  async function ejecutarRevertirCobro(e: CuadernoEntrada) {
+    setRevirtiendoCobroId(e.id);
+    try {
+      if (e.orderId) {
+        await revertirCobroFiado(e.orderId);
+      } else {
+        await revertirCobroFiadoManual(e.id);
+      }
+      hapticSuccess();
+      refrescarCuaderno();
+      queryClient.invalidateQueries({ queryKey: ['report'] });
+    } catch {
+      hapticWarning();
+      setErrorEliminar('No se pudo revertir el cobro. Revisa la conexión.');
+    } finally {
+      setRevirtiendoCobroId(null);
+    }
+  }
+
+  async function ejecutarEliminarFiado(id: string) {
     setEliminandoFiadoId(id);
     setErrorEliminar('');
     try {
-      await eliminarFiadoManual(id);
+      await eliminarFiado(id);
       hapticSuccess();
       refrescarCuaderno();
     } catch {
@@ -886,9 +926,22 @@ export default function AdminScreen() {
                         <Text className="text-xs mr-2" style={{ color: t.textSecondary }}>
                           {e.cobradoEn ? horaLima(e.cobradoEn) : ''}
                         </Text>
-                        <Text className="text-[#B79BE8] font-extrabold">
+                        <Text className="text-[#B79BE8] font-extrabold mr-2">
                           S/ {e.monto.toFixed(2)}
                         </Text>
+                        <ScalePressable
+                          onPress={() => confirmarRevertirCobro(e)}
+                          disabled={revirtiendoCobroId === e.id}
+                          pressedScale={0.9}
+                          className="rounded-full p-1"
+                          style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+                        >
+                          {revirtiendoCobroId === e.id ? (
+                            <ActivityIndicator size={12} color="#B79BE8" />
+                          ) : (
+                            <RotateCcw size={12} color="#B79BE8" strokeWidth={2.5} />
+                          )}
+                        </ScalePressable>
                       </View>
                     );
                   })}
@@ -1025,21 +1078,20 @@ export default function AdminScreen() {
                       </View>
                     )}
                     <View className="flex-row gap-2 mt-3">
-                      {e.canal === 'manual' && (
-                        <ScalePressable
-                          onPress={() => confirmarEliminarFiadoManual(e.id)}
-                          disabled={eliminandoFiadoId === e.id}
-                          pressedScale={0.95}
-className="bg-[#4D2B2B]/40 rounded-full"
-                            innerClassName="w-full px-3.5 py-2 items-center justify-center"
-                          >
-                          {eliminandoFiadoId === e.id ? (
-                            <ActivityIndicator size={14} color={t.primary} />
-                          ) : (
-                            <Trash2 size={14} color={t.primary} strokeWidth={2.5} />
-                          )}
-                        </ScalePressable>
-                      )}
+                      <ScalePressable
+                        onPress={() => confirmarEliminarFiado(e)}
+                        disabled={eliminandoFiadoId === e.id}
+                        pressedScale={0.95}
+                        className="rounded-full"
+                        style={{ backgroundColor: alpha(t.primary, 22) }}
+                        innerClassName="w-full px-3.5 py-2 items-center justify-center"
+                      >
+                        {eliminandoFiadoId === e.id ? (
+                          <ActivityIndicator size={14} color={t.primary} />
+                        ) : (
+                          <Trash2 size={14} color={t.primary} strokeWidth={2.5} />
+                        )}
+                      </ScalePressable>
                       <ScalePressable
                         onPress={() => {
                           hapticImpact();
@@ -1386,7 +1438,7 @@ className="bg-[#4D2B2B]/40 rounded-full"
                     <View className="flex-row items-center gap-2">
                       <Text className="font-bold text-sm" style={{ color: t.textPrimary }}>{item.hora}</Text>
                       {item.tapero > 0 && (
-                        <View className="rounded-full px-2 py-0.5 flex-row items-center gap-1" style={{ backgroundColor: t.chip }}>
+                        <View className="rounded-full px-2 py-0.5 flex-row items-center gap-1" style={{ backgroundColor: temaId === 'claro' ? t.chip : t.surface }}>
                           <ShoppingBag size={11} color={t.accent} strokeWidth={2.5} />
                           <Text className="text-xs font-semibold" style={{ color: t.accent }}>
                             taper +S/ {item.tapero.toFixed(2)}
@@ -1419,7 +1471,7 @@ className="bg-[#4D2B2B]/40 rounded-full"
                       {item.nComandas} comanda{item.nComandas === 1 ? '' : 's'} · toca para ver el detalle
                     </Text>
                   </View>
-                  <Text className="font-extrabold" style={{ color: t.success }}>S/ {item.total.toFixed(2)}</Text>
+                  <Text className="font-extrabold" style={{ color: temaId === 'claro' ? t.success : '#7FB37F' }}>S/ {item.total.toFixed(2)}</Text>
                 </ScalePressable>
               )}
             />
@@ -1893,7 +1945,9 @@ className="flex-1 rounded-full py-3.5 items-center"
                       {eliminarConfirm === orden.orderId && (
                         <View className="border rounded-xl px-3 py-2.5 mb-2" style={{ backgroundColor: alpha(t.primary, 15), borderColor: alpha(t.primary, 40) }}>
                           <Text className="text-xs font-bold mb-2" style={{ color: t.textPrimary }}>
-                            ¿Eliminar esta comanda del reporte? Se quitará de las ventas y totales.
+                            {venta.canal === 'delivery' && venta.pagoEstado === 'PAGADO'
+                              ? '¿Eliminar esta comanda del reporte? Se quitará de las ventas y totales. Si era un fiado cobrado, el cobro también se deshace y vuelve a quedar por cobrar.'
+                              : '¿Eliminar esta comanda del reporte? Se quitará de las ventas y totales.'}
                           </Text>
                           <View className="flex-row gap-2">
                             <ScalePressable

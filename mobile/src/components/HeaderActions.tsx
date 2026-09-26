@@ -55,6 +55,7 @@ const ETIQUETAS_ROL: Record<Role, string> = {
 const ETIQUETA_AVISO: Record<AvisoTipo, { icono: string; texto: string; color: string }> = {
   FIADO: { icono: '⏳', texto: 'Fiado por cobrar', color: '#E8A33D' },
   ERROR: { icono: '⚠️', texto: 'Error de registro', color: '#D4432B' },
+  REAPERTURA: { icono: '↩️', texto: 'Cobro revertido', color: '#7A6BC4' },
 };
 
 function fechaAviso(iso: string): string {
@@ -382,11 +383,11 @@ export function HeaderActions({
           },
         ]
       : []),
-    ...(user?.role === 'mesero' || user?.role === 'delivery'
+    ...(user?.role === 'mesero' || user?.role === 'delivery' || user?.role === 'admin'
       ? [
           {
             key: 'comandas',
-            label: 'Comandas',
+            label: user?.role === 'admin' ? 'Cobros de hoy' : 'Comandas',
             onPress: handleComandas,
             color: t.textPrimary,
           },
@@ -651,6 +652,7 @@ export function HeaderActions({
       {comandasAbierto && (
         <ComandasPanel
           onClose={() => setComandasAbierto(false)}
+          esAdmin={user?.role === 'admin'}
         />
       )}
 

@@ -21,6 +21,8 @@ export type DatosReporteXlsx = {
   ventas: Sale[];
   ingresosManuales: IngresoManual[];
   cobrosAjenos: CobroAjeno[];
+  /** Suma de los fiados ABIERTOS del cuaderno con entrega en este dia. */
+  totalPendiente: number;
   platos: PlatoMenuXlsx[];
   categorias: CategoriaMenuXlsx[];
   entradas: EntradaMenuXlsx[];
@@ -60,7 +62,8 @@ export class ReporteXlsxService {
 
     const totalManuales = manuales.reduce((acc, i) => acc + i.monto, 0);
     const ventasCobradas = t.totalIngresos - totalManuales;
-    const ventasPendientes = t.totalPendiente;
+    // Los fiados abiertos no son ventas del dia: se toman del cuaderno.
+    const ventasPendientes = datos.totalPendiente ?? t.totalPendiente;
     const totalCobrosAjenos = cobros.reduce((acc, c) => acc + c.monto, 0);
     const recaudado = t.totalIngresos;
     const totalCobradoDia = recaudado + totalCobrosAjenos;

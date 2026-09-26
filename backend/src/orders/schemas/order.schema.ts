@@ -55,7 +55,7 @@ export class Order {
     required: false,
     enum: ['PAGADO', 'PENDIENTE'],
   })
-  pagoEstado?: PagoEstado;
+  pagoEstado?: PagoEstado | null;
 
   @Prop({
     type: String,

@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "purge": "node -r ts-node/register -r tsconfig-paths/register src/scripts/purge.ts",
     "reset": "node -r ts-node/register -r tsconfig-paths/register src/scripts/reset.ts",
-    "seed:users": "node -r ts-node/register -r tsconfig-paths/register src/scripts/seed-user.ts"
+    "seed:users": "node -r ts-node/register -r tsconfig-paths/register src/scripts/seed-user.ts",
+    "migrate:fiados": "node -r ts-node/register -r tsconfig-paths/register src/scripts/migrar-fiados-pendientes.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

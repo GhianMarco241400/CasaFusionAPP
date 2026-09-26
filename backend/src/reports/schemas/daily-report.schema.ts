@@ -30,6 +30,8 @@ export type IngresoManual = {
   registradoEn: string;
   creadoPor: string;
   canal?: 'mesa' | 'delivery';
+  /** Entrada del cuaderno que origino este ingreso, para poder revertirlo. */
+  cuadernoId?: string | null;
 };
 
 export type ItemTotal = {

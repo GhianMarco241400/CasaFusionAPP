@@ -61,7 +61,7 @@ export interface Order {
   clienteNombre?: string;
   telefono?: string;
   direccion?: string;
-  pagoEstado?: PagoEstado;
+  pagoEstado?: PagoEstado | null;
   metodoPago?: MetodoPago;
   status: OrderStatus;
   edited?: boolean; // true si el mesero reenvió una comanda ya enviada
@@ -103,7 +103,7 @@ export interface IngresoManual {
 
 export type CuadernoTipo = 'FIADO' | 'COBRO';
 export type CuadernoEstado = 'ABIERTO' | 'COBRADO' | 'ELIMINADO';
-export type AvisoTipo = 'FIADO' | 'ERROR';
+export type AvisoTipo = 'FIADO' | 'ERROR' | 'REAPERTURA';
 
 export interface CuadernoEntrada {
   id: string;
@@ -131,10 +131,13 @@ export interface Aviso {
   desc: string;
   monto?: number;
   entidadId?: string | null;
+  creadoPor?: string | null;
   leido: boolean;
   resolved: boolean;
   createdAt: string;
+  updatedAt: string;
 }
+
 
 export interface CuadernoDia {
   date: string;

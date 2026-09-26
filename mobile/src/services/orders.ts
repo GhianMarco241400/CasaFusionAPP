@@ -181,3 +181,17 @@ export async function completeDelivery(
     orders: (response.data?.order ? [response.data.order] : []).map(mapOrderFromBackend),
   };
 }
+
+export type DestinoReapertura = 'READY' | 'IN_PREPARATION';
+
+export async function reabrirCobro(
+  orderId: string,
+  motivo: string,
+  destino: DestinoReapertura,
+): Promise<Order[]> {
+  const response = await api.post<{ orders?: BackendOrder[] }>(
+    `/reports/reabrir-cobro/${orderId}`,
+    { motivo, destino },
+  );
+  return (response.data?.orders ?? []).map(mapOrderFromBackend);
+}

@@ -36,6 +36,7 @@ function datos(overrides: Partial<DatosReporteXlsx> = {}): DatosReporteXlsx {
     ventas: [ventaBase()],
     ingresosManuales: [],
     cobrosAjenos: [],
+    totalPendiente: 0,
     platos: [
       { name: 'Lomo saltado', price: 55, categoryId: 'cat-fondos' },
       { name: 'Causa limeña', price: 18, categoryId: 'cat-extras' },
@@ -148,25 +149,10 @@ describe('ReporteXlsxService', () => {
   it('el resumen separa vendido, cobrado, por cobrar y total del día', async () => {
     const wb = await leer(
       datos({
-        ventas: [
-          ventaBase(),
-          ventaBase({
-            tableNumber: 0,
-            canal: 'delivery',
-            pagoEstado: 'PENDIENTE',
-            metodoPago: null,
-            total: 40,
-            completedAt: '2026-09-25T21:00:00.000Z',
-            orders: [
-              {
-                orderId: 'bbbbbbbbbbbbbbbbbbbbbbb2',
-                edited: false,
-                total: 40,
-                items: [{ name: 'Ají de gallina', quantity: 1, unitPrice: 40 }],
-              },
-            ],
-          }),
-        ],
+        // El pedido por cobrar ya no es una venta del dia: vive en el cuaderno
+        // y el reporte lo recibe como totalPendiente.
+        ventas: [ventaBase()],
+        totalPendiente: 40,
         ingresosManuales: [
           {
             monto: 25,

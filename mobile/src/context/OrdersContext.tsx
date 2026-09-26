@@ -10,6 +10,8 @@ import {
   completeTable as apiCompleteTable,
   completeOrder as apiCompleteOrder,
   completeDelivery as apiCompleteDelivery,
+  reabrirCobro as apiReabrirCobro,
+  DestinoReapertura,
   DatosCliente,
 } from '../services/orders';
 import {
@@ -35,6 +37,7 @@ type OrdersContextType = {
   completeTable: (tableNumber: number, metodoPago: MetodoPago) => Promise<DailyReport | null>;
   completeOrder: (orderId: string, metodoPago: MetodoPago) => Promise<DailyReport | null>;
   completeDelivery: (orderId: string, pagoEstado: PagoEstado, metodoPago?: MetodoPago) => Promise<DailyReport | null>;
+  reabrirCobro: (orderId: string, motivo: string, destino: DestinoReapertura) => Promise<boolean>;
   getActiveOrderForTable: (tableNumber: number) => Order | undefined;
   getOrdersForTable: (tableNumber: number) => Order[];
 };
@@ -227,6 +230,21 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function reabrirCobro(
+    orderId: string,
+    motivo: string,
+    destino: DestinoReapertura,
+  ): Promise<boolean> {
+    try {
+      const reabiertas = await apiReabrirCobro(orderId, motivo, destino);
+      setOrders((prev) => reabiertas.reduce(agregarOActualizar, prev));
+      return true;
+    } catch {
+      reportarError('No se pudo reabrir el cobro').catch(() => {});
+      return false;
+    }
+  }
+
   async function updateOrderItems(orderId: string, items: OrderItem[]): Promise<boolean> {
     try {
       const orden = await apiUpdateOrderItems(orderId, items);
@@ -283,6 +301,7 @@ function getOrdersForTable(tableNumber: number) {
         completeTable,
         completeOrder,
         completeDelivery,
+        reabrirCobro,
         getActiveOrderForTable,
         getOrdersForTable,
       }}

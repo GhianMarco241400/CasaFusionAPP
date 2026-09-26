@@ -1,13 +1,17 @@
 // src/components/ComandasPanel.tsx
-import { Pressable, Text, View, FlatList } from 'react-native';
+import { useState } from 'react';
+import { Modal, Pressable, Text, View, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, SlideInRight } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMisComandas } from '../services/reports';
 import { Sale } from '../types';
 import { useTema } from '../context/TemaContext';
+import { useOrders } from '../context/OrdersContext';
+import { DestinoReapertura } from '../services/orders';
 import { alpha } from '../theme/temas';
+import { ModalReabrirCobro } from './ModalReabrirCobro';
 import { ScalePressable } from './ScalePressable';
 
 const FORMATO_FECHA = {
@@ -28,7 +32,15 @@ function etiquetaVenta(venta: Sale): string {
   return `Mesa ${venta.tableNumber}`;
 }
 
-function DetalleVenta({ venta, indice }: { venta: Sale; indice: number }) {
+function DetalleVenta({
+  venta,
+  indice,
+  onReabrir,
+}: {
+  venta: Sale;
+  indice: number;
+  onReabrir: (venta: Sale) => void;
+}) {
   const { t } = useTema();
   const metodo = venta.metodoPago ?? null;
   const numComandas = venta.orders.length;
@@ -94,6 +106,19 @@ function DetalleVenta({ venta, indice }: { venta: Sale; indice: number }) {
             S/ {venta.total.toFixed(2)}
           </Text>
         </View>
+
+        <View className="h-px mt-2.5 mb-2" style={{ backgroundColor: t.border }} />
+        <ScalePressable onPress={() => onReabrir(venta)} pressedScale={0.97} className="w-full">
+          <View
+            className="rounded-full py-2 flex-row items-center justify-center gap-1.5 border"
+            style={{ borderColor: t.border }}
+          >
+            <Feather name="rotate-ccw" size={12} color={t.textSecondary} />
+            <Text className="text-[11px] font-bold" style={{ color: t.textSecondary }}>
+              Reabrir cobro
+            </Text>
+          </View>
+        </ScalePressable>
       </View>
     </Animated.View>
   );
@@ -101,11 +126,16 @@ function DetalleVenta({ venta, indice }: { venta: Sale; indice: number }) {
 
 export function ComandasPanel({
   onClose,
+  esAdmin,
 }: {
   onClose: () => void;
+  esAdmin?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { t } = useTema();
+  const { reabrirCobro } = useOrders();
+  const queryClient = useQueryClient();
+  const [aReabrir, setAReabrir] = useState<Sale | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ['mis-comandas'],
     queryFn: getMisComandas,
@@ -113,6 +143,21 @@ export function ComandasPanel({
   });
 
   const comandas = data ?? [];
+  const titulo = esAdmin ? 'Cobros de hoy' : 'Mis comandas';
+  const subtitulo = esAdmin
+    ? 'Ventas cobradas por el equipo'
+    : 'Registro de ventas cobradas';
+
+  async function confirmar(motivo: string, destino: DestinoReapertura) {
+    const orderId = aReabrir?.orders[0]?.orderId;
+    if (!orderId) return false;
+    const ok = await reabrirCobro(orderId, motivo, destino);
+    if (ok) {
+      setAReabrir(null);
+      await queryClient.invalidateQueries({ queryKey: ['mis-comandas'] });
+    }
+    return ok;
+  }
 
   return (
     <View className="absolute inset-0" style={{ zIndex: 50, elevation: 50 }}>
@@ -133,10 +178,10 @@ export function ComandasPanel({
               </View>
               <View>
                 <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>
-                  Mis comandas
+                  {titulo}
                 </Text>
                 <Text className="text-[11px] -mt-0.5" style={{ color: t.textSecondary }}>
-                  Registro de ventas cobradas
+                  {subtitulo}
                 </Text>
               </View>
             </View>
@@ -157,7 +202,11 @@ export function ComandasPanel({
               data={comandas}
               keyExtractor={(item) => item.id ?? item.orders[0].orderId}
               renderItem={({ item, index }) => (
-                <DetalleVenta venta={item} indice={index} />
+                <DetalleVenta
+                  venta={item}
+                  indice={index}
+                  onReabrir={(v) => setAReabrir(v)}
+                />
               )}
               contentContainerStyle={{ padding: 14, paddingBottom: 16 }}
               ListEmptyComponent={
@@ -166,7 +215,7 @@ export function ComandasPanel({
                     <Feather name="inbox" size={24} color={t.textSecondary} />
                   </View>
                   <Text className="text-sm text-center" style={{ color: t.textSecondary }}>
-                    Aún no tienes comandas cobradas
+                    {esAdmin ? 'Todavía no hay cobros hoy' : 'Aún no tienes comandas cobradas'}
                   </Text>
                 </View>
               }
@@ -174,6 +223,21 @@ export function ComandasPanel({
           )}
         </Animated.View>
       </Animated.View>
+
+      {aReabrir && (
+        <Modal transparent animationType="fade" visible onRequestClose={() => setAReabrir(null)}>
+          <View className="flex-1">
+            <ModalReabrirCobro
+              visible
+              etiqueta={etiquetaVenta(aReabrir)}
+              total={aReabrir.total}
+              metodo={aReabrir.metodoPago}
+              onClose={() => setAReabrir(null)}
+              onConfirm={confirmar}
+            />
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }

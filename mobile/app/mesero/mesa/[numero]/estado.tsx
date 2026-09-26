@@ -18,6 +18,7 @@ import { Platform } from 'react-native';
 import { Order, OrderStatus, MetodoPago } from '../../../../src/types';
 import { useOrders } from '../../../../src/context/OrdersContext';
 import { ScalePressable } from '../../../../src/components/ScalePressable';
+import { ModalReabrirCobro } from '../../../../src/components/ModalReabrirCobro';
 import QrYape from '../../../../src/components/QrYape';
 import { useTema } from '../../../../src/context/TemaContext';
 import { alpha, TemaTokens } from '../../../../src/theme/temas';
@@ -29,6 +30,7 @@ import {
   Package,
   Pencil,
   Receipt,
+  RotateCcw,
   Smartphone,
   StickyNote,
   Trash2,
@@ -398,7 +400,7 @@ export default function EstadoMesaScreen() {
   const { numero } = useLocalSearchParams<{ numero: string }>();
   const mesa = Number(numero);
   const esParallevar = mesa === 0;
-  const { getOrdersForTable, deleteOrder, completeTable, completeOrder, setUrgente } = useOrders();
+  const { getOrdersForTable, deleteOrder, completeTable, completeOrder, setUrgente, reabrirCobro } = useOrders();
   const comandas = getOrdersForTable(mesa);
   const [completando, setCompletando] = useState(false);
   const [completada, setCompletada] = useState(false);
@@ -408,6 +410,8 @@ export default function EstadoMesaScreen() {
     null | { tipo: 'mesa' } | { tipo: 'comanda'; order: Order }
   >(null);
   const [verQr, setVerQr] = useState(false);
+  const [ordenCobradaId, setOrdenCobradaId] = useState<string | null>(null);
+  const [verReabrir, setVerReabrir] = useState(false);
 
   const todasListas = comandas.length > 0 && comandas.every((o) => o.status === 'READY');
   const pendientes = comandas.filter((o) => o.status !== 'READY').length;
@@ -455,6 +459,9 @@ export default function EstadoMesaScreen() {
     if (completando) return;
     const ordenCobrar = cobro?.tipo === 'comanda' ? cobro.order : null;
     const total = ordenCobrar ? ordenCobrar.total : totalMesa;
+    // Cualquier orden de la venta sirve para revertirla: el backend trae
+    // todas las comandas que compartieron ese cobro.
+    setOrdenCobradaId(ordenCobrar ? ordenCobrar.id : comandas[0]?.id ?? null);
     cerrarCobro();
     hapticImpact(Haptics.ImpactFeedbackStyle.Medium);
     setTotalCobrado(total);
@@ -476,7 +483,7 @@ export default function EstadoMesaScreen() {
   }
 
   // Yape pide ver el QR antes de registrar la venta, para no cerrar la mesa
-  // si el cliente todavía no pagó.
+  // si el cliente todavia no pagó.
   function ejecutarCobro(metodo: MetodoPago) {
     if (completando) return;
     if (metodo === 'YAPE') {
@@ -688,45 +695,81 @@ export default function EstadoMesaScreen() {
 
       <Modal visible={completada} transparent animationType="none" onRequestClose={() => router.back()}>
         <View className="flex-1 items-center justify-center px-8" style={{ backgroundColor: alpha(t.overlay, 70) }}>
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            className={`rounded-3xl p-8 w-full max-w-sm items-center ${
-              temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
-            }`}
-            style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
-          >
-            <Animated.View entering={ZoomIn.duration(350)} className="mb-4">
-              <View
-                className="w-16 h-16 rounded-full items-center justify-center"
-                style={{ backgroundColor: alpha(t.textPrimary, 10) }}
-              >
-                <Receipt size={34} color={t.accent} strokeWidth={1.8} />
-              </View>
-            </Animated.View>
-            <Text className="text-xl font-extrabold mb-1" style={{ color: t.textPrimary }}>
-              {esParallevar ? 'Pedido para llevar completado' : `Mesa ${numero} completada`}
-            </Text>
-            <Text className="text-sm text-center mb-1" style={{ color: t.textSecondary }}>
-              Se guardó en el reporte del día
-            </Text>
-            <Text className="text-2xl font-extrabold mb-1" style={{ color: t.success }}>
-              S/ {totalCobrado.toFixed(2)}
-            </Text>
-            <View className="flex-row items-center gap-1.5 mb-6">
-              {metodoUsado === 'YAPE' && <Smartphone size={13} color={t.textSecondary} strokeWidth={2.2} />}
-              {metodoUsado === 'EFECTIVO' && <Banknote size={13} color={t.textSecondary} strokeWidth={2.2} />}
-              <Text className="text-xs font-bold" style={{ color: t.textSecondary }}>
-                {metodoUsado === 'YAPE' ? 'Pagó por Yape' : metodoUsado === 'EFECTIVO' ? 'Pagó en efectivo' : ''}
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => (esParallevar ? setCompletada(false) : router.back())}
-              className="w-full rounded-full py-4 items-center active:opacity-80"
-              style={{ backgroundColor: t.success }}
+          {verReabrir ? (
+            <ModalReabrirCobro
+              visible
+              etiqueta={esParallevar ? 'Pedido para llevar' : `Mesa ${numero}`}
+              total={totalCobrado}
+              metodo={metodoUsado}
+              onClose={() => setVerReabrir(false)}
+              onConfirm={async (motivo, destino) => {
+                if (!ordenCobradaId) {
+                  Alert.alert('No se pudo reabrir', 'No encontramos el cobro a revertir.');
+                  return false;
+                }
+                const ok = await reabrirCobro(ordenCobradaId, motivo, destino);
+                if (ok) {
+                  setCompletada(false);
+                }
+                return ok;
+              }}
+            />
+          ) : (
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              className={`rounded-3xl p-8 w-full max-w-sm items-center ${
+                temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+              }`}
+              style={{ backgroundColor: t.surfaceElevated, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
             >
-              <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Listo</Text>
-            </Pressable>
-          </Animated.View>
+              <Animated.View entering={ZoomIn.duration(350)} className="mb-4">
+                <View
+                  className="w-16 h-16 rounded-full items-center justify-center"
+                  style={{ backgroundColor: alpha(t.textPrimary, 10) }}
+                >
+                  <Receipt size={34} color={t.accent} strokeWidth={1.8} />
+                </View>
+              </Animated.View>
+              <Text className="text-xl font-extrabold mb-1" style={{ color: t.textPrimary }}>
+                {esParallevar ? 'Pedido para llevar completado' : `Mesa ${numero} completada`}
+              </Text>
+              <Text className="text-sm text-center mb-1" style={{ color: t.textSecondary }}>
+                Se guardó en el reporte del día
+              </Text>
+              <Text className="text-2xl font-extrabold mb-1" style={{ color: t.success }}>
+                S/ {totalCobrado.toFixed(2)}
+              </Text>
+              <View className="flex-row items-center gap-1.5 mb-6">
+                {metodoUsado === 'YAPE' && <Smartphone size={13} color={t.textSecondary} strokeWidth={2.2} />}
+                {metodoUsado === 'EFECTIVO' && <Banknote size={13} color={t.textSecondary} strokeWidth={2.2} />}
+                <Text className="text-xs font-bold" style={{ color: t.textSecondary }}>
+                  {metodoUsado === 'YAPE' ? 'Pagó por Yape' : metodoUsado === 'EFECTIVO' ? 'Pagó en efectivo' : ''}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => (esParallevar ? setCompletada(false) : router.back())}
+                className="w-full rounded-full py-4 items-center active:opacity-80"
+                style={{ backgroundColor: t.success }}
+              >
+                <Text className="font-bold text-base" style={{ color: t.onPrimary }}>Listo</Text>
+              </Pressable>
+              <ScalePressable
+                onPress={() => {
+                  hapticImpact(Haptics.ImpactFeedbackStyle.Soft);
+                  setVerReabrir(true);
+                }}
+                pressedScale={0.98}
+                className="w-full py-3 mt-1"
+              >
+                <View className="flex-row items-center justify-center gap-1.5">
+                  <RotateCcw size={14} color={t.textSecondary} strokeWidth={2.2} />
+                  <Text className="text-sm" style={{ color: t.textSecondary }}>
+                    Me equivoqué, reabrir cobro
+                  </Text>
+                </View>
+              </ScalePressable>
+            </Animated.View>
+          )}
         </View>
       </Modal>
     </View>
