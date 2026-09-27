@@ -1,21 +1,18 @@
 ﻿// app/delivery/_layout.tsx
 import { Slot, usePathname } from 'expo-router';
 import { View } from 'react-native';
-import { useRef } from 'react';
-import { BlurTargetView } from 'expo-blur';
 import { HeaderActions } from '../../src/components/HeaderActions';
+import { useTema } from '../../src/context/TemaContext';
 
 export default function DeliveryLayout() {
+  const { t } = useTema();
   const pathname = usePathname();
   const esHomeDelivery = pathname === '/delivery';
-  const blurRef = useRef<View | null>(null);
 
   return (
-    <View style={{ flex: 1 }}>
-      <BlurTargetView ref={blurRef} style={{ flex: 1 }}>
-        <Slot />
-      </BlurTargetView>
-      {esHomeDelivery && <HeaderActions blurTargetRef={blurRef} />}
+    <View style={{ flex: 1, backgroundColor: t.background }}>
+      <Slot />
+      {esHomeDelivery && <HeaderActions />}
     </View>
   );
 }

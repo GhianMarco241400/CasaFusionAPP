@@ -210,10 +210,6 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
                 })}
               </View>
 
-              <Text className="text-[11px] mt-5 leading-snug" style={{ color: tema.textSecondary }}>
-                El tamaño se guarda y se mantiene aunque lleguen comandas nuevas. Solo cambia
-                desde aquí.
-              </Text>
             </ScrollView>
           </Animated.View>
         </Animated.View>

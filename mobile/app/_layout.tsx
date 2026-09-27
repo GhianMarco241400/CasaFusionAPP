@@ -1,7 +1,8 @@
 // app/_layout.tsx
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
@@ -11,7 +12,7 @@ import '../global.css';
 
 const queryClient = new QueryClient();
 
-function GuardiaDeSesion({ children }: { children: ReactNode }) {
+function GuardiaDeSesion() {
   const { user, isRestoring } = useAuth();
   const { t } = useTema();
   const segments = useSegments();
@@ -36,15 +37,23 @@ function GuardiaDeSesion({ children }: { children: ReactNode }) {
     }
   }, [router, segments, user, isRestoring]);
 
-  if (isRestoring) {
-    return (
-      <View className="flex-1 items-center justify-center" style={{ backgroundColor: t.background }}>
-        <ActivityIndicator size="large" color={t.primary} />
-      </View>
-    );
-  }
-
-  return <>{children}</>;
+  return (
+    <>
+      <StatusBar style={t.statusBarStyle} animated />
+      {isRestoring ? (
+        <View className="flex-1 items-center justify-center" style={{ backgroundColor: t.background }}>
+          <ActivityIndicator size="large" color={t.primary} />
+        </View>
+      ) : (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: t.background },
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 export default function RootLayout() {
@@ -54,9 +63,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <OrdersProvider>
-              <GuardiaDeSesion>
-                <Stack screenOptions={{ headerShown: false }} />
-              </GuardiaDeSesion>
+              <GuardiaDeSesion />
             </OrdersProvider>
           </AuthProvider>
         </QueryClientProvider>

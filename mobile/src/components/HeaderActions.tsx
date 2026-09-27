@@ -1,5 +1,4 @@
 // src/components/HeaderActions.tsx
-import { type RefObject } from 'react';
 import { useEffect, useState } from 'react';
 import {
   Pressable,
@@ -22,7 +21,6 @@ import { Feather } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ReanimatedSwipeable, { SwipeDirection } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../context/OrdersContext';
 import { useTema } from '../context/TemaContext';
@@ -234,11 +232,7 @@ function AvisoBell() {
   );
 }
 
-export function HeaderActions({
-  blurTargetRef,
-}: {
-  blurTargetRef: RefObject<View | null>;
-}) {
+export function HeaderActions() {
   const { user, logout, updateAvatar, removeAvatar } = useAuth();
   const { orders } = useOrders();
   const { t } = useTema();

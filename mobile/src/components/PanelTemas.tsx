@@ -8,13 +8,18 @@ import { TEMAS, TemaId } from '../theme/temas';
 import { ScalePressable } from './ScalePressable';
 
 const DESCRIPCION: Record<TemaId, string> = {
-  actual: 'Espresso, el look de siempre',
+  actual: 'expreso, un tema elegante',
   claro: 'Crema, más luminoso',
 };
 
 const ICONO: Record<TemaId, string> = {
   actual: '☕',
-  claro: '🌤️',
+  claro: '🍰',
+};
+
+const NOMBRE: Record<TemaId, string> = {
+  actual: 'Modo Expreso',
+  claro: 'Modo Crema',
 };
 
 export function PanelTemas({ onClose }: { onClose: () => void }) {
@@ -118,7 +123,7 @@ export function PanelTemas({ onClose }: { onClose: () => void }) {
                             numberOfLines={1}
                             style={{ color: paleta.textPrimary }}
                           >
-                            {modo === 'actual' ? 'Modo Actual' : 'Modo Claro'}
+                            {NOMBRE[modo]}
                           </Text>
                         </View>
                         {activo && (
@@ -165,8 +170,7 @@ export function PanelTemas({ onClose }: { onClose: () => void }) {
                 className="text-[11px] mt-3 leading-snug"
                 style={{ color: t.textSecondary }}
               >
-                El tema se guarda en este dispositivo y se aplica en todas las pantallas.
-                También puedes pulsar 'Activo' y se marca.
+               
               </Text>
             </ScrollView>
           </Animated.View>

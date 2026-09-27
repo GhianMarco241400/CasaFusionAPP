@@ -1,6 +1,7 @@
 // app/index.tsx
 import { View, Text, TextInput, Pressable, ImageBackground } from 'react-native';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
@@ -39,6 +40,7 @@ export default function LoginScreen() {
       resizeMode="cover"
       className="flex-1"
     >
+      <StatusBar style="light" />
       <View className="flex-1 bg-black/40 items-center justify-center px-6">
         <Logo altura={130} estilo={{ marginBottom: 22 }} />
 

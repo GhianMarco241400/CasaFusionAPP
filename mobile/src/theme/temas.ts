@@ -29,6 +29,7 @@ export type TemaTokens = {
   paper: string;
   pillBg: string;
   pillText: string;
+  statusBarStyle: 'light' | 'dark';
 };
 
 export const TEMAS: Record<TemaId, TemaTokens> = {
@@ -56,6 +57,7 @@ export const TEMAS: Record<TemaId, TemaTokens> = {
     paper: '#FBF7EE',
     pillBg: '#F7F2E9',
     pillText: '#2B2420',
+    statusBarStyle: 'light',
   },
   claro: {
     background: '#FAF7F2',
@@ -81,6 +83,7 @@ export const TEMAS: Record<TemaId, TemaTokens> = {
     paper: '#FBF7EE',
     pillBg: '#FFFFFF',
     pillText: '#2B2420',
+    statusBarStyle: 'dark',
   },
 };
 

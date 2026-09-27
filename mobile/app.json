@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.casafusion.pos",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#0A0A06",
         "foregroundImage": "./assets/android-icon-foreground.png",
