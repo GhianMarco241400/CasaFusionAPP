@@ -1,12 +1,14 @@
 // app/mesero/index.tsx
-import { View, Text, Pressable, FlatList } from 'react-native';
+import { View, Pressable, FlatList } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Users, Package } from 'lucide-react-native';
 import { useOrders } from '../../src/context/OrdersContext';
 import { useTema } from '../../src/context/TemaContext';
 import { TemaTokens } from '../../src/theme/temas';
 import { Order } from '../../src/types';
 import { ScalePressable } from '../../src/components/ScalePressable';
+import { Texto as Text } from '../../src/components/Texto';
 import Logo from '../../src/components/Logo';
 import { TiempoTranscurrido } from '../../src/components/TiempoTranscurrido';
 
@@ -60,12 +62,16 @@ function estadoDominante(comandas: Order[], t: TemaTokens): EstadoDominante | nu
 
 export default function MeseroScreen() {
   const { t, temaId } = useTema();
+  const insets = useSafeAreaInsets();
   const { getOrdersForTable } = useOrders();
   const llvComandas = getOrdersForTable(0);
   const estLl = estadoDominante(llvComandas, t);
 
   return (
-    <View className="flex-1 px-6 pt-16" style={{ backgroundColor: t.background }}>
+    <View
+      className="flex-1 px-6"
+      style={{ backgroundColor: t.background, paddingTop: insets.top + 16 }}
+    >
       <Logo fuente="logo2" altura={44} estilo={{ marginBottom: 20, marginTop: 2 }} />
 
       <ScalePressable
@@ -110,8 +116,9 @@ export default function MeseroScreen() {
       <FlatList
         data={mesas}
         numColumns={2}
+        style={{ flex: 1 }}
         columnWrapperStyle={{ gap: 12 }}
-        contentContainerStyle={{ gap: 12 }}
+        contentContainerStyle={{ gap: 12, paddingBottom: insets.bottom + 16 }}
         keyExtractor={(item) => item.toString()}
         renderItem={({ item }) => {
           const comandasMesa = getOrdersForTable(item);

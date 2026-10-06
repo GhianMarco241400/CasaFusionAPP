@@ -24,6 +24,7 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import ReanimatedSwipeable, { SwipeDirection } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getDishes, getEntradas, getCategories } from '../../src/services/menu';
 import { Dish, OrderItem } from '../../src/types';
 import { EntradaModal, EntradaConfirmResult } from '../../src/components/EntradaModal';
@@ -72,11 +73,13 @@ function DishSkeleton() {
 
 export default function DeliveryNuevoScreen() {
   const { t, temaId } = useTema();
+  const insets = useSafeAreaInsets();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
   const [comanda, setComanda] = useState<OrderItem[]>([]);
   const [clienteNombre, setClienteNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
+  const [datosAbierto, setDatosAbierto] = useState(true);
   const [platoSeleccionado, setPlatoSeleccionado] = useState<Dish | null>(null);
   const [entradaEditIndex, setEntradaEditIndex] = useState<number | null>(null);
   const [notaAbierta, setNotaAbierta] = useState<number | null>(null);
@@ -326,8 +329,8 @@ export default function DeliveryNuevoScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 px-6 pt-14"
-      style={{ backgroundColor: t.background }}
+      className="flex-1 px-6"
+      style={{ backgroundColor: t.background, paddingTop: insets.top + 12 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View className="flex-row items-center mb-4">
@@ -361,37 +364,86 @@ export default function DeliveryNuevoScreen() {
       </View>
 
       <View
-        className={`rounded-2xl p-4 mb-4 ${temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'}`}
+        className={`rounded-2xl mb-4 ${temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'}`}
         style={{ backgroundColor: t.surface, borderColor: temaId === 'claro' ? '#1E1A17' : t.border }}
       >
-        <Text className="text-sm font-bold mb-2.5" style={{ color: t.textPrimary }}>Datos del cliente</Text>
-        <TextInput
-          className="rounded-xl text-base px-4 py-3 mb-2.5"
-          style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
-          placeholder="Nombre *"
-          placeholderTextColor={t.placeholder}
-          value={clienteNombre}
-          onChangeText={setClienteNombre}
-        />
-        <View className="flex-row gap-2.5">
-          <TextInput
-            className="flex-1 rounded-xl text-base px-4 py-3"
-            style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
-            placeholder="Teléfono"
-            placeholderTextColor={t.placeholder}
-            keyboardType="phone-pad"
-            value={telefono}
-            onChangeText={setTelefono}
-          />
-          <TextInput
-            className="flex-[1.6] rounded-xl text-base px-4 py-3"
-            style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
-            placeholder="Dirección"
-            placeholderTextColor={t.placeholder}
-            value={direccion}
-            onChangeText={setDireccion}
-          />
-        </View>
+        {!datosAbierto ? (
+          <ScalePressable
+            onPress={() => {
+              hapticImpact(Haptics.ImpactFeedbackStyle.Light);
+              setDatosAbierto(true);
+            }}
+            pressedScale={0.99}
+            className="flex-row items-center gap-2.5 px-4 py-3"
+            innerClassName="flex-1"
+          >
+            <View
+              className="w-8 h-8 rounded-full items-center justify-center"
+              style={{ backgroundColor: alpha(t.primary, clienteValido ? 15 : 30) }}
+            >
+              <Text className="text-sm" style={{ color: t.primary }}>🛵</Text>
+            </View>
+            <View className="flex-1">
+              <Text
+                className="text-base font-bold"
+                style={{ color: clienteValido ? t.textPrimary : t.primary }}
+                numberOfLines={1}
+              >
+                {clienteValido ? clienteNombre : 'Agregar nombre del cliente *'}
+              </Text>
+              {(telefono || direccion) && (
+                <Text className="text-xs" style={{ color: t.textSecondary }} numberOfLines={1}>
+                  {[telefono, direccion].filter(Boolean).join(' · ')}
+                </Text>
+              )}
+            </View>
+            <Text className="text-sm font-bold" style={{ color: t.textSecondary }}>✎</Text>
+          </ScalePressable>
+        ) : (
+          <View className="p-4">
+            <View className="flex-row items-center justify-between mb-2.5">
+              <ScalePressable
+                onPress={() => {
+                  hapticImpact(Haptics.ImpactFeedbackStyle.Light);
+                  setDatosAbierto(false);
+                }}
+                pressedScale={0.99}
+              >
+                <View className="flex-row items-center gap-1.5">
+                  <Text className="text-sm font-bold" style={{ color: t.textPrimary }}>Datos del cliente</Text>
+                  <Text className="text-xs" style={{ color: t.textSecondary }}>▾</Text>
+                </View>
+              </ScalePressable>
+            </View>
+            <TextInput
+              className="rounded-xl text-base px-4 py-3 mb-2.5"
+              style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
+              placeholder="Nombre *"
+              placeholderTextColor={t.placeholder}
+              value={clienteNombre}
+              onChangeText={setClienteNombre}
+            />
+            <View className="flex-row gap-2.5">
+              <TextInput
+                className="flex-1 rounded-xl text-base px-4 py-3"
+                style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
+                placeholder="Teléfono"
+                placeholderTextColor={t.placeholder}
+                keyboardType="phone-pad"
+                value={telefono}
+                onChangeText={setTelefono}
+              />
+              <TextInput
+                className="flex-[1.6] rounded-xl text-base px-4 py-3"
+                style={{ backgroundColor: t.inputBg, color: t.textPrimary }}
+                placeholder="Dirección"
+                placeholderTextColor={t.placeholder}
+                value={direccion}
+                onChangeText={setDireccion}
+              />
+            </View>
+          </View>
+        )}
       </View>
 
       <View className="flex-row items-center justify-between mb-2">
@@ -494,7 +546,7 @@ export default function DeliveryNuevoScreen() {
         <ScalePressable
           onPress={() => {
             hapticImpact();
-            setEspecialesAbierto((v) => !v);
+            setEspecialesAbierto(true);
           }}
           pressedScale={0.97}
           className="mt-2 mb-0"
@@ -512,80 +564,11 @@ export default function DeliveryNuevoScreen() {
             </View>
             <View className="rounded-full px-3 py-1 flex-row items-center gap-1.5" style={{ backgroundColor: alpha(t.pillText, 15) }}>
               <Text className="text-xs font-bold" style={{ color: t.pillText }}>
-                {cantEspeciales > 0
-                  ? `${cantEspeciales} en pedido`
-                  : especialesAbierto
-                    ? 'Ocultar'
-                    : 'Ver'}
+                {cantEspeciales > 0 ? `${cantEspeciales} en pedido` : 'Ver'}
               </Text>
             </View>
           </View>
         </ScalePressable>
-      )}
-
-      {especialesAbierto && especiales.length > 0 && (
-        <Animated.FlatList
-          entering={FadeInDown.duration(200)}
-          data={especiales}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={{ gap: 10, paddingVertical: 4 }}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const yaEnComanda = comanda.some((c) => c.dishId === item.id);
-            return (
-              <Animated.View entering={FadeInDown.duration(160)}>
-                <ScalePressable onPress={() => handleSelectPlato(item)} pressedScale={0.95}>
-                  <Animated.View
-                    layout={LinearTransition.springify().damping(18)}
-                    className="w-36 rounded-xl px-4 py-3 border-2 min-h-[104px]"
-                    style={
-                      yaEnComanda
-                        ? { backgroundColor: t.primary, borderColor: t.primary }
-                        : { backgroundColor: '#FBF1DF', borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.accent, 60) }
-                    }
-                  >
-                    <Text
-                      className="font-semibold"
-                      style={{ color: yaEnComanda ? t.onPrimary : t.pillText }}
-                      numberOfLines={2}
-                    >
-                      {item.name}
-                    </Text>
-                    <View
-                      className="flex-row items-center justify-between mt-2.5 rounded-full py-1 px-2"
-                      style={{
-                        backgroundColor: yaEnComanda
-                          ? alpha(t.onPrimary, 20)
-                          : alpha(t.accent, 20),
-                      }}
-                    >
-                      <Text className="text-sm" style={{ color: yaEnComanda ? t.onPrimary : t.pillText }}>
-                        S/ {item.price}
-                      </Text>
-                      <Animated.View entering={ZoomIn.duration(150)}>
-                        <View
-                          className="w-6 h-6 rounded-full items-center justify-center"
-                          style={{
-                            backgroundColor: yaEnComanda ? t.onPrimary : t.accent,
-                          }}
-                        >
-                          <Text
-                            className="text-center font-extrabold text-sm leading-none"
-                            style={{ color: yaEnComanda ? t.primary : t.pillText }}
-                          >
-                            {yaEnComanda ? '✓' : '+'}
-                          </Text>
-                        </View>
-                      </Animated.View>
-                    </View>
-                  </Animated.View>
-                </ScalePressable>
-              </Animated.View>
-            );
-          }}
-        />
       )}
 
       {extras.length > 0 && (
@@ -854,67 +837,72 @@ export default function DeliveryNuevoScreen() {
       </View>
 
       <View
-        className={`mt-6 -mx-6 rounded-t-3xl px-6 pt-5 pb-8 ${
+        className={`mt-4 -mx-6 rounded-t-3xl px-6 pt-3 ${
           temaId === 'claro' ? 'border-t-2' : 'border-t'
         }`}
-        style={{ backgroundColor: alpha(t.surface, 70), borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+        style={{
+          backgroundColor: alpha(t.surface, 70),
+          borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border,
+          paddingBottom: insets.bottom + 16,
+        }}
       >
-        <View className="flex-row items-end justify-between mb-4">
-          <View>
+        {errorEnvio !== '' && (
+          <Text className="text-sm text-center mb-2" style={{ color: t.primary }}>{errorEnvio}</Text>
+        )}
+
+        <View className="flex-row items-center gap-3">
+          <View className="flex-1">
             <Text className="text-xs font-semibold uppercase tracking-wider" style={{ color: t.textSecondary }}>Total</Text>
-            <Text className="text-xs mt-1" style={{ color: t.placeholder }}>
+            <Animated.View key={total.toFixed(2)} entering={ZoomIn.duration(180)}>
+              <Text className="text-2xl font-extrabold" style={{ color: t.textPrimary }}>S/ {total.toFixed(2)}</Text>
+            </Animated.View>
+            <Text className="text-xs" style={{ color: t.placeholder }}>
               {comanda.length === 0
                 ? 'Comanda vacía'
                 : `${cantItems} ${cantItems === 1 ? 'item' : 'items'}`}
             </Text>
           </View>
-          <Animated.View key={total.toFixed(2)} entering={ZoomIn.duration(180)}>
-            <Text className="text-3xl font-extrabold" style={{ color: t.textPrimary }}>S/ {total.toFixed(2)}</Text>
-          </Animated.View>
-        </View>
 
-        {errorEnvio !== '' && (
-          <Text className="text-sm text-center mb-3" style={{ color: t.primary }}>{errorEnvio}</Text>
-        )}
-
-        <ScalePressable
-          onPress={handleEnviarCocina}
-          disabled={comanda.length === 0 || !clienteValido || enviando}
-          pressedScale={0.97}
-        >
-          <View
-            className={`rounded-2xl py-4 items-center ${
-              (comanda.length === 0 || !clienteValido) && !enviando ? 'opacity-60 border-2' : ''
-            }`}
-            style={{
-              backgroundColor: enviando
-                ? t.success
-                : comanda.length === 0 || !clienteValido
-                  ? temaId === 'claro'
-                    ? t.pillBg
-                    : t.surface
-                  : t.primary,
-              borderColor:
-                (comanda.length === 0 || !clienteValido) && !enviando
-                  ? temaId === 'claro'
-                    ? '#1E1A17'
-                    : t.border
-                  : undefined,
-            }}
+          <ScalePressable
+            onPress={handleEnviarCocina}
+            disabled={comanda.length === 0 || !clienteValido || enviando}
+            pressedScale={0.97}
+            className="flex-[1.6]"
           >
-            <Text
-              className="text-center font-bold text-base"
+            <View
+              className={`rounded-2xl py-3 items-center ${
+                (comanda.length === 0 || !clienteValido) && !enviando ? 'opacity-60 border-2' : ''
+              }`}
               style={{
-                color:
-                  temaId === 'claro' && (comanda.length === 0 || !clienteValido)
-                    ? t.pillText
-                    : t.onPrimary,
+                backgroundColor: enviando
+                  ? t.success
+                  : comanda.length === 0 || !clienteValido
+                    ? temaId === 'claro'
+                      ? t.pillBg
+                      : t.surface
+                    : t.primary,
+                borderColor:
+                  (comanda.length === 0 || !clienteValido) && !enviando
+                    ? temaId === 'claro'
+                      ? '#1E1A17'
+                      : t.border
+                    : undefined,
               }}
             >
-              {enviando ? (edit ? '✓ Comanda actualizada' : '✓ Enviado a cocina') : edit ? 'Guardar cambios' : 'Enviar a cocina'}
-            </Text>
-          </View>
-        </ScalePressable>
+              <Text
+                className="text-center font-bold text-base"
+                style={{
+                  color:
+                    temaId === 'claro' && (comanda.length === 0 || !clienteValido)
+                      ? t.pillText
+                      : t.onPrimary,
+                }}
+              >
+                {enviando ? (edit ? '✓ Comanda actualizada' : '✓ Enviado a cocina') : edit ? 'Guardar cambios' : 'Enviar a cocina'}
+              </Text>
+            </View>
+          </ScalePressable>
+        </View>
       </View>
 
       <EntradaModal
@@ -974,10 +962,14 @@ export default function DeliveryNuevoScreen() {
               onPress={() => setExtrasAbierto(false)}
             />
             <View
-              className={`rounded-t-3xl h-[55%] pt-5 pb-8 px-5 ${
+              className={`rounded-t-3xl h-[55%] pt-5 px-5 ${
                 temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
               }`}
-              style={{ backgroundColor: t.surfaceElevated, borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+              style={{
+                backgroundColor: t.surfaceElevated,
+                borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border,
+                paddingBottom: insets.bottom + 16,
+              }}
             >
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>Extras</Text>
@@ -1061,6 +1053,121 @@ export default function DeliveryNuevoScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={especialesAbierto}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEspecialesAbierto(false)}
+      >
+        <View className="flex-1 justify-end">
+          <Pressable
+            className="absolute inset-0 bg-black/50"
+            onPress={() => setEspecialesAbierto(false)}
+          />
+          <View
+            className={`rounded-t-3xl h-[55%] pt-5 px-5 ${
+              temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
+            }`}
+            style={{
+              backgroundColor: t.surfaceElevated,
+              borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border,
+              paddingBottom: insets.bottom + 16,
+            }}
+          >
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center gap-2.5">
+                <View
+                  className="w-8 h-8 rounded-full items-center justify-center"
+                  style={{ backgroundColor: alpha(t.pillText, 15) }}
+                >
+                  <Star size={17} color={t.pillText} strokeWidth={2.5} fill={t.pillText} />
+                </View>
+                <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>Especiales</Text>
+                <Text className="text-xs" style={{ color: t.textSecondary }}>{especiales.length} disponibles</Text>
+              </View>
+              <ScalePressable onPress={() => setEspecialesAbierto(false)} pressedScale={0.9} hitSlop={8}>
+                <View
+                  className={`w-9 h-9 rounded-full items-center justify-center ${
+                    temaId === 'claro' ? 'border-2 border-[#1E1A17]' : ''
+                  }`}
+                  style={{ backgroundColor: t.surface }}
+                >
+                  <X size={16} color={t.textSecondary} />
+                </View>
+              </ScalePressable>
+            </View>
+
+            <Animated.FlatList
+              data={especiales}
+              numColumns={2}
+              columnWrapperStyle={{ gap: 10 }}
+              contentContainerStyle={{ paddingBottom: 16 }}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const yaEnComanda = comanda.some((c) => c.dishId === item.id);
+                return (
+                  <ScalePressable
+                    onPress={() => {
+                      setEspecialesAbierto(false);
+                      handleSelectPlato(item);
+                    }}
+                    pressedScale={0.95}
+                    className="flex-1 mb-3"
+                  >
+                    <View
+                      className={`rounded-2xl overflow-hidden ${
+                        temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
+                      }`}
+                      style={{
+                        backgroundColor: yaEnComanda ? t.primary : alpha(t.accent, 8),
+                        borderColor: yaEnComanda ? t.primary : temaId === 'claro' ? '#1E1A17' : alpha(t.accent, 45),
+                      }}
+                    >
+                      {item.image !== '' && (
+                        <Image
+                          source={{ uri: item.image }}
+                          className="w-full h-24"
+                          style={{ backgroundColor: t.background }}
+                          resizeMode="cover"
+                        />
+                      )}
+                      <View className="px-3 py-2.5">
+                        <Text
+                          className="font-semibold text-sm"
+                          style={{ color: yaEnComanda ? t.onPrimary : t.textPrimary }}
+                          numberOfLines={2}
+                        >
+                          {item.name}
+                        </Text>
+                        <View className="flex-row items-center justify-between mt-1.5">
+                          <Text
+                            className="text-xs font-semibold"
+                            style={{ color: yaEnComanda ? alpha(t.onPrimary, 85) : t.textSecondary }}
+                          >
+                            S/ {item.price.toFixed(2)}
+                          </Text>
+                          <View
+                            className="w-6 h-6 rounded-full items-center justify-center"
+                            style={{ backgroundColor: yaEnComanda ? t.onPrimary : t.accent }}
+                          >
+                            <Text
+                              className="text-center font-extrabold text-sm leading-none"
+                              style={{ color: yaEnComanda ? t.primary : t.onPrimary }}
+                            >
+                              {yaEnComanda ? '✓' : '+'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  </ScalePressable>
+                );
+              }}
+            />
+          </View>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );

@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Modal,
   Image,
   Pressable,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -28,6 +27,7 @@ import { Dish, OrderItem } from '../../../../src/types';
 import { EntradaModal, EntradaConfirmResult } from '../../../../src/components/EntradaModal';
 import { PlatoModal } from '../../../../src/components/PlatoModal';
 import { ScalePressable } from '../../../../src/components/ScalePressable';
+import { Texto as Text, TextoInput as TextInput } from '../../../../src/components/Texto';
 import { useAuth } from '../../../../src/context/AuthContext';
 import { useOrders } from '../../../../src/context/OrdersContext';
 import { useTema } from '../../../../src/context/TemaContext';
@@ -87,6 +87,7 @@ function DishSkeleton() {
 
 export default function MesaScreen() {
   const { t, temaId } = useTema();
+  const insets = useSafeAreaInsets();
   const { numero, edit } = useLocalSearchParams<{ numero: string; edit?: string }>();
   const mesa = Number(numero);
   const [comanda, setComanda] = useState<OrderItem[]>([]);
@@ -320,8 +321,8 @@ export default function MesaScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 px-6 pt-14"
-      style={{ backgroundColor: t.background }}
+      className="flex-1 px-6"
+      style={{ backgroundColor: t.background, paddingTop: insets.top + 12 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View className="flex-row items-center mb-5">
@@ -888,10 +889,14 @@ export default function MesaScreen() {
       </View>
 
       <View
-        className={`mt-6 -mx-6 rounded-t-3xl px-6 pt-5 pb-8 ${
+        className={`mt-6 -mx-6 rounded-t-3xl px-6 pt-5 ${
           temaId === 'claro' ? 'border-t-2' : 'border-t'
         }`}
-        style={{ backgroundColor: alpha(t.surface, 70), borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+        style={{
+          backgroundColor: alpha(t.surface, 70),
+          borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border,
+          paddingBottom: insets.bottom + 16,
+        }}
       >
         <View className="flex-row items-end justify-between mb-4">
           <View>
@@ -1006,10 +1011,14 @@ export default function MesaScreen() {
               onPress={() => setExtrasAbierto(false)}
             />
             <View
-              className={`rounded-t-3xl h-[55%] pt-5 pb-8 px-5 ${
+              className={`rounded-t-3xl h-[55%] pt-5 px-5 ${
                 temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
               }`}
-              style={{ backgroundColor: t.surfaceElevated, borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border }}
+              style={{
+                backgroundColor: t.surfaceElevated,
+                borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border,
+                paddingBottom: insets.bottom + 16,
+              }}
             >
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>Extras</Text>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Alert, FlatList, Modal, Pressable } from 'react-native';
+import { View, Alert, FlatList, Modal, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,6 +19,8 @@ import { Platform } from 'react-native';
 import { Order, OrderStatus, MetodoPago } from '../../../../src/types';
 import { useOrders } from '../../../../src/context/OrdersContext';
 import { ScalePressable } from '../../../../src/components/ScalePressable';
+import { Texto as Text } from '../../../../src/components/Texto';
+import { useEscala } from '../../../../src/hooks/useEscala';
 import { ModalReabrirCobro } from '../../../../src/components/ModalReabrirCobro';
 import QrYape from '../../../../src/components/QrYape';
 import { useTema } from '../../../../src/context/TemaContext';
@@ -76,6 +79,7 @@ function Steam({ delay, left }: { delay: number; left: number }) {
 function ChefAnimado() {
   const bob = useSharedValue(0);
   const { t } = useTema();
+  const { escala } = useEscala();
 
   useEffect(() => {
     bob.value = withRepeat(
@@ -91,7 +95,7 @@ function ChefAnimado() {
   const bobStyle = useAnimatedStyle(() => ({ transform: [{ translateY: bob.value }] }));
 
   return (
-    <View className="w-24 items-center">
+    <View style={{ width: escala(96) }} className="items-center">
       <Steam delay={0} left={10} />
       <Steam delay={500} left={72} />
 <Animated.View
@@ -237,14 +241,19 @@ function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, onUrgente,
         </View>
       ))}
 
-      <View className="flex-row items-center justify-between mt-2.5 gap-2 flex-wrap">
+      <View className="mt-2.5 gap-2">
         <Text className="text-[#8C7F6E] text-sm font-bold">Total: S/ {order.total.toFixed(2)}</Text>
+
         {order.status === 'PENDING' && (
-          <View className="flex-row gap-2 items-center">
+          <View className="flex-row items-center gap-2">
             {onUrgente && (
-              <ScalePressable onPress={onUrgente} pressedScale={0.95} className="rounded-lg overflow-hidden">
+              <ScalePressable
+                onPress={onUrgente}
+                pressedScale={0.95}
+                className="flex-1 rounded-lg overflow-hidden"
+              >
                 <View
-                  className={`rounded-lg py-1.5 px-2.5 border ${
+                  className={`rounded-lg py-2 px-2 items-center justify-center border ${
                     order.urgente ? '' : 'border-dashed'
                   }`}
                   style={
@@ -258,6 +267,7 @@ function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, onUrgente,
                 >
                   <Text
                     className="text-xs font-bold"
+                    numberOfLines={1}
                     style={{ color: order.urgente ? t.onPrimary : t.primary }}
                   >
                     🛎️ {order.urgente ? 'Urgente' : 'Marcar urgente'}
@@ -265,24 +275,37 @@ function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, onUrgente,
                 </View>
               </ScalePressable>
             )}
-            <ScalePressable onPress={onEditar} pressedScale={0.95} className="rounded-lg overflow-hidden">
-              <View className="rounded-lg py-2 px-4 flex-row items-center gap-1.5" style={{ backgroundColor: t.yape }}>
+            <ScalePressable
+              onPress={onEditar}
+              pressedScale={0.95}
+              className="flex-1 rounded-lg overflow-hidden"
+            >
+              <View className="rounded-lg py-2 px-3 flex-row items-center justify-center gap-1.5" style={{ backgroundColor: t.yape }}>
                 <Pencil size={14} color={t.onPrimary} strokeWidth={2.5} />
-                <Text className="text-sm font-bold" style={{ color: t.onPrimary }}>Editar</Text>
+                <Text className="text-sm font-bold" numberOfLines={1} style={{ color: t.onPrimary }}>Editar</Text>
               </View>
             </ScalePressable>
-            <ScalePressable onPress={onEliminar} pressedScale={0.95} className="rounded-lg overflow-hidden">
-              <View className="rounded-lg py-2 px-4 items-center justify-center" style={{ backgroundColor: t.primary }}>
+            <ScalePressable
+              onPress={onEliminar}
+              pressedScale={0.95}
+              className="rounded-lg overflow-hidden"
+            >
+              <View className="rounded-lg py-2 px-3 items-center justify-center" style={{ backgroundColor: t.primary }}>
                 <Trash2 size={16} color={t.onPrimary} />
               </View>
             </ScalePressable>
           </View>
         )}
+
         {order.status === 'IN_PREPARATION' && onUrgente && (
-          <View className="flex-row gap-2">
-            <ScalePressable onPress={onUrgente} pressedScale={0.95} className="rounded-lg overflow-hidden">
+          <View className="flex-row">
+            <ScalePressable
+              onPress={onUrgente}
+              pressedScale={0.95}
+              className="flex-1 rounded-lg overflow-hidden"
+            >
               <View
-                className={`rounded-lg py-1.5 px-2.5 border ${
+                className={`rounded-lg py-2 px-3 items-center justify-center border ${
                   order.urgente ? '' : 'border-dashed'
                 }`}
                 style={
@@ -296,6 +319,7 @@ function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, onUrgente,
               >
                 <Text
                   className="text-xs font-bold"
+                  numberOfLines={1}
                   style={{ color: order.urgente ? t.onPrimary : t.primary }}
                 >
                   🛎️ {order.urgente ? 'Urgente' : 'Marcar urgente'}
@@ -304,11 +328,12 @@ function ComandaCard({ order, numero, onEditar, onEliminar, onCobrar, onUrgente,
             </ScalePressable>
           </View>
         )}
+
         {order.status === 'READY' && onCobrar && (
           <ScalePressable onPress={onCobrar} pressedScale={0.95} disabled={cobrando} className="rounded-lg overflow-hidden">
-            <View className={`rounded-lg py-2 px-4 flex-row items-center gap-1.5 ${cobrando ? 'opacity-70' : ''}`} style={{ backgroundColor: t.success }}>
+            <View className={`rounded-lg py-2 px-4 flex-row items-center justify-center gap-1.5 ${cobrando ? 'opacity-70' : ''}`} style={{ backgroundColor: t.success }}>
               <Receipt size={15} color={t.onPrimary} strokeWidth={2.2} />
-              <Text className="text-sm font-bold" style={{ color: t.onPrimary }}>Cobrar</Text>
+              <Text className="text-sm font-bold" numberOfLines={1} style={{ color: t.onPrimary }}>Cobrar</Text>
             </View>
           </ScalePressable>
         )}
@@ -397,6 +422,7 @@ function ResumenMesa({ comandas, total }: ResumenMesaProps) {
 
 export default function EstadoMesaScreen() {
   const { t, temaId } = useTema();
+  const insets = useSafeAreaInsets();
   const { numero } = useLocalSearchParams<{ numero: string }>();
   const mesa = Number(numero);
   const esParallevar = mesa === 0;
@@ -495,7 +521,10 @@ export default function EstadoMesaScreen() {
   }
 
   return (
-    <View className="flex-1 px-6 pt-14" style={{ backgroundColor: t.background }}>
+    <View
+      className="flex-1 px-6"
+      style={{ backgroundColor: t.background, paddingTop: insets.top + 12 }}
+    >
       <View className="flex-row items-center mb-9">
         <ScalePressable
           onPress={() => {
@@ -547,13 +576,17 @@ export default function EstadoMesaScreen() {
             renderItem={() => <ResumenMesa comandas={comandas} total={totalMesa} />}
           />
         ) : (
-          <View className="flex-row items-start gap-3 flex-1">
-            <ChefAnimado />
+          <View className="flex-1">
             <FlatList
               className="flex-1"
               data={comandas}
               keyExtractor={(item) => item.id}
               showsVerticalScrollIndicator={false}
+              ListHeaderComponent={
+                <View className="items-center mb-2">
+                  <ChefAnimado />
+                </View>
+              }
               renderItem={({ item }) => (
                 <ComandaCard
                   order={item}
@@ -584,7 +617,7 @@ export default function EstadoMesaScreen() {
         )}
       </View>
 
-      <View className="pt-2 pb-8">
+      <View className="pt-2" style={{ paddingBottom: insets.bottom + 16 }}>
         {todasListas && !esParallevar && (
           <ScalePressable onPress={completarMesa} pressedScale={0.97} className="mb-3">
             <View

@@ -13,6 +13,7 @@ import {
   Image,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -236,6 +237,7 @@ export function HeaderActions() {
   const { user, logout, updateAvatar, removeAvatar } = useAuth();
   const { orders } = useOrders();
   const { t } = useTema();
+  const insets = useSafeAreaInsets();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [gestionAbierto, setGestionAbierto] = useState(false);
   const [comandasAbierto, setComandasAbierto] = useState(false);
@@ -428,7 +430,10 @@ export function HeaderActions() {
 
   return (
     <>
-      <View className="absolute top-14 right-6 z-10 flex-row items-center gap-3.5">
+      <View
+        className="absolute right-6 z-10 flex-row items-center gap-3.5"
+        style={{ top: insets.top + 8 }}
+      >
         {user?.role === 'admin' && <AvisoBell />}
         {user?.role === 'cocina' && (
           <View

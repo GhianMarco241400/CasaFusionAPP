@@ -6,13 +6,26 @@ import { Order } from '../types';
 
 let socket: Socket | null = null;
 
+function esperarConexion(s: Socket): Promise<Socket> {
+  if (s.connected) return Promise.resolve(s);
+  return new Promise<Socket>((resolve) => {
+    const timeout = setTimeout(() => resolve(s), 8000);
+    s.once('connect', () => {
+      clearTimeout(timeout);
+      resolve(s);
+    });
+  });
+}
+
 export async function connectSocket(): Promise<Socket> {
-  if (socket && socket.connected) return socket;
+  if (socket) {
+    if (!socket.connected && !socket.active) {
+      socket.connect();
+    }
+    return esperarConexion(socket);
+  }
 
   const token = await getTokenAsync();
-
-  socket?.removeAllListeners();
-  socket?.disconnect();
 
   const nuevo = io(BASE_URL, {
     transports: ['websocket'],
@@ -25,17 +38,7 @@ export async function connectSocket(): Promise<Socket> {
   });
   socket = nuevo;
 
-  if (nuevo.connected) return nuevo;
-
-  await new Promise<void>((resolve) => {
-    const timeout = setTimeout(() => resolve(), 8000);
-    nuevo.once('connect', () => {
-      clearTimeout(timeout);
-      resolve();
-    });
-  });
-
-  return nuevo;
+  return esperarConexion(nuevo);
 }
 
 export function disconnectSocket() {
@@ -54,6 +57,10 @@ export function onOrderUpdated(callback: (order: Order) => void): void {
   socket?.on('order:updated', (data: unknown) => {
     callback(mapOrderFromBackend(data as Parameters<typeof mapOrderFromBackend>[0]));
   });
+}
+
+export function onSocketConnect(callback: () => void): void {
+  socket?.on('connect', callback);
 }
 
 export function onOrderDeleted(callback: (orderId: string) => void): void {

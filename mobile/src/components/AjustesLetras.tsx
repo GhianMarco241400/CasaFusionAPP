@@ -7,6 +7,7 @@ import { useLetrasCocina, FuenteLetras } from '../context/LetrasCocina';
 import { useTema } from '../context/TemaContext';
 import { alpha } from '../theme/temas';
 import { ScalePressable } from './ScalePressable';
+import { Texto } from './Texto';
 
 function nombreFuente(f: FuenteLetras): string {
   if (f === 'serif') return 'Serif';
@@ -18,6 +19,40 @@ function familiaPara(fuente: FuenteLetras): string | undefined {
   if (fuente === 'serif') return Platform.select({ ios: 'Georgia', default: 'serif' });
   if (fuente === 'mono') return Platform.select({ ios: 'Menlo', default: 'monospace' });
   return undefined;
+}
+
+function BotonTamano({
+  onPress,
+  disabled,
+  icono,
+  etiqueta,
+}: {
+  onPress: () => void;
+  disabled: boolean;
+  icono: 'minus' | 'plus';
+  etiqueta: string;
+}) {
+  const { t: tema } = useTema();
+  // El color va en un View hijo con style estático: si se deja en el
+  // style-funcional del Pressable, en Modo Crema el círculo puede no pintarse
+  // y el texto claro queda sobre el fondo blanco de la tarjeta.
+  const activo = !disabled;
+  return (
+    <Pressable onPress={onPress} disabled={disabled} hitSlop={10}>
+      <View
+        className="w-14 h-14 rounded-full items-center justify-center border"
+        style={{
+          backgroundColor: activo ? tema.textPrimary : tema.surface,
+          borderColor: activo ? tema.textPrimary : tema.border,
+        }}
+      >
+        <Feather name={icono} size={22} color={activo ? tema.surface : tema.textSecondary} />
+        <Texto className="font-extrabold text-xs -mt-0.5" style={{ color: activo ? tema.surface : tema.textSecondary }}>
+          {etiqueta}
+        </Texto>
+      </View>
+    </Pressable>
+  );
 }
 
 export function AjustesLetras({ onClose }: { onClose: () => void }) {
@@ -50,9 +85,10 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
 
         <Animated.View
           entering={SlideInRight.springify().damping(17).stiffness(180)}
-          className="absolute right-0 top-14 w-[58%] rounded-l-3xl overflow-hidden border"
+          className="absolute right-0 top-14 w-[88%] rounded-l-3xl overflow-hidden border"
           style={{
             bottom: insets.bottom + 16,
+            maxWidth: 380,
             backgroundColor: tema.surfaceElevated,
             borderColor: tema.border,
             zIndex: 60,
@@ -70,12 +106,12 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
                   <Feather name="type" size={18} color={tema.onAccent} />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-extrabold text-lg" style={{ color: tema.textPrimary }}>
+                  <Texto className="font-extrabold text-lg" style={{ color: tema.textPrimary }}>
                     Ajustar letras
-                  </Text>
-                  <Text className="text-[11px] -mt-0.5" style={{ color: tema.textSecondary }} numberOfLines={1}>
+                  </Texto>
+                  <Texto className="text-[11px] -mt-0.5" numberOfLines={1} style={{ color: tema.textSecondary }}>
                     Mira tus comandas atrás
-                  </Text>
+                  </Texto>
                 </View>
               </View>
               <ScalePressable onPress={onClose} pressedScale={0.9} hitSlop={8}>
@@ -87,14 +123,15 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
             <View className="h-px" style={{ backgroundColor: tema.border }} />
 
             <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 20 }}>
-              <Text className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: tema.textSecondary }}>
+              <Texto className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: tema.textSecondary }}>
                 Así se ve ahora
-              </Text>
+              </Texto>
               <View className="bg-[#FBF7EE] rounded-2xl px-4 py-3 border" style={{ borderColor: tema.border }}>
                 <View className="flex-row items-center gap-2 mb-1.5">
-                  <View className="bg-[#E8A33D]/30 rounded-full px-2 py-0.5">
+                    <View className="bg-[#E8A33D]/30 rounded-full px-2 py-0.5 shrink">
                     <Text
                       className="text-[#A86E16] font-bold"
+                      numberOfLines={1}
                       style={{ fontSize: t(14), fontFamily: fuenteValor }}
                     >
                       Pendiente
@@ -102,6 +139,7 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
                   </View>
                   <Text
                     className="text-[#2B2420] font-extrabold flex-shrink"
+                    numberOfLines={1}
                     style={{ fontSize: t(30), fontFamily: fuenteValor }}
                   >
                     Mesa 3
@@ -109,25 +147,29 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
                 </View>
                 <Text
                   className="text-[#2B2420] font-extrabold"
+                  numberOfLines={2}
                   style={{ fontSize: t(24), fontFamily: fuenteValor }}
                 >
                   3x Lomo Saltado
                 </Text>
                 <Text
                   className="text-[#4D7C4D] font-semibold"
+                  numberOfLines={1}
                   style={{ fontSize: t(20), fontFamily: fuenteValor }}
                 >
                   📝 Sin cebolla
                 </Text>
                 <View className="flex-row items-end justify-between mt-2.5 pt-2 border-t border-[#2B2420]/15">
                   <Text
-                    className="text-[#8C7F6E] font-bold uppercase tracking-wide"
+                    className="text-[#8C7F6E] font-bold uppercase tracking-wide shrink"
+                    numberOfLines={1}
                     style={{ fontSize: t(14), fontFamily: fuenteValor }}
                   >
                     Total
                   </Text>
                   <Text
-                    className="text-[#2B2420] font-extrabold"
+                    className="text-[#2B2420] font-extrabold ml-2"
+                    numberOfLines={1}
                     style={{ fontSize: t(24), fontFamily: fuenteValor }}
                   >
                     S/ 48.00
@@ -135,55 +177,39 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
                 </View>
               </View>
 
-              <Text className="text-xs font-bold uppercase tracking-wide mt-6 mb-2" style={{ color: tema.textSecondary }}>
+              <Texto className="text-xs font-bold uppercase tracking-wide mt-6 mb-2" style={{ color: tema.textSecondary }}>
                 Tamaño de las letras
-              </Text>
-              <View className="flex-row items-center justify-between gap-3 rounded-2xl px-4 py-4 border" style={{ backgroundColor: tema.surface, borderColor: tema.border }}>
-                <Pressable
+              </Texto>
+              <View className="flex-row items-center justify-between gap-2 rounded-2xl px-3 py-4 border" style={{ backgroundColor: tema.surface, borderColor: tema.border }}>
+                <BotonTamano
                   onPress={() => disminuir()}
                   disabled={alMinimo}
-                  hitSlop={10}
-                  className="w-16 h-16 rounded-full items-center justify-center"
-                  style={({ pressed }) => {
-                    if (alMinimo) return { opacity: 0.4, backgroundColor: tema.chip, borderColor: tema.border };
-                    if (pressed) return { transform: [{ scale: 0.92 }], backgroundColor: tema.chip, borderColor: tema.border };
-                    return { backgroundColor: tema.chip, borderColor: tema.border };
-                  }}
-                >
-                  <Feather name="minus" size={22} color={tema.chipText} />
-                  <Text className="font-extrabold text-xs -mt-0.5" style={{ color: tema.chipText }}>A-</Text>
-                </Pressable>
-                <View className="flex-1 items-center">
-                  <Text className="text-[11px] font-bold uppercase" style={{ color: tema.textSecondary }}>
+                  icono="minus"
+                  etiqueta="A-"
+                />
+                <View className="flex-1 items-center" style={{ minWidth: 0 }}>
+                  <Texto className="text-[11px] font-bold uppercase" numberOfLines={1} style={{ color: tema.textSecondary }}>
                     Tamaño actual
-                  </Text>
-                  <Text className="font-extrabold text-2xl" style={{ color: tema.textPrimary }}>
+                  </Texto>
+                  <Texto className="font-extrabold text-2xl" numberOfLines={1} style={{ color: tema.textPrimary }}>
                     {Math.round(escala * 100)}%
-                  </Text>
+                  </Texto>
                 </View>
-                <Pressable
+                <BotonTamano
                   onPress={() => aumentar()}
                   disabled={alMaximo}
-                  hitSlop={10}
-                  className="w-16 h-16 rounded-full items-center justify-center"
-                  style={({ pressed }) => {
-                    if (alMaximo) return { opacity: 0.4, backgroundColor: tema.primary, borderColor: tema.primary };
-                    if (pressed) return { transform: [{ scale: 0.92 }], backgroundColor: tema.primary, borderColor: tema.primary };
-                    return { backgroundColor: tema.primary, borderColor: tema.primary };
-                  }}
-                >
-                  <Feather name="plus" size={22} color={tema.onPrimary} />
-                  <Text className="font-extrabold text-xs -mt-0.5" style={{ color: tema.onPrimary }}>A+</Text>
-                </Pressable>
+                  icono="plus"
+                  etiqueta="A+"
+                />
               </View>
 
-              <ScalePressable onPress={restablecer} pressedScale={0.97} className="self-center mt-3">
-                <Text className="font-bold text-xs" style={{ color: tema.accent }}>⟲ Restablecer tamaño</Text>
+              <ScalePressable onPress={() => restablecer()} pressedScale={0.97} className="self-center mt-3">
+                <Texto className="font-bold text-xs" style={{ color: tema.accent }}>⟲ Restablecer tamaño</Texto>
               </ScalePressable>
 
-              <Text className="text-xs font-bold uppercase tracking-wide mt-6 mb-2" style={{ color: tema.textSecondary }}>
+              <Texto className="text-xs font-bold uppercase tracking-wide mt-6 mb-2" style={{ color: tema.textSecondary }}>
                 Tipo de letra
-              </Text>
+              </Texto>
               <View className="flex-row flex-wrap gap-2">
                 {fuentes.map((f) => {
                   const activa = f === fuente;
@@ -195,8 +221,9 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
                       className="rounded-full px-4 py-2 border"
                       style={activa ? { backgroundColor: tema.primary, borderColor: tema.primary } : { backgroundColor: tema.surface, borderColor: tema.border }}
                     >
-                      <Text
+                      <Texto
                         className="font-bold text-sm"
+                        numberOfLines={1}
                         style={
                           familiaPara(f)
                             ? { fontFamily: familiaPara(f), color: activa ? tema.onPrimary : tema.textSecondary }
@@ -204,7 +231,7 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
                         }
                       >
                         {nombreFuente(f)}
-                      </Text>
+                      </Texto>
                     </ScalePressable>
                   );
                 })}

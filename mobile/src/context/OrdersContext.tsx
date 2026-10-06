@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { AppState } from 'react-native';
 import { Order, OrderItem, DailyReport, PagoEstado, MetodoPago } from '../types';
 import {
   getActiveOrders,
@@ -20,6 +21,7 @@ import {
   onOrderCreated,
   onOrderUpdated,
   onOrderDeleted,
+  onSocketConnect,
 } from '../services/socket';
 import { reportarError } from '../services/reports';
 import { useAuth } from './AuthContext';
@@ -62,15 +64,19 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     }
 
     let activo = true;
+
+    function sincronizar() {
+      return getActiveOrders()
+        .then((data) => {
+          if (activo) setOrders(data);
+        })
+        .catch(() => {});
+    }
+
     setLoading(true);
-    getActiveOrders()
-      .then((data) => {
-        if (activo) setOrders(data);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (activo) setLoading(false);
-      });
+    sincronizar().finally(() => {
+      if (activo) setLoading(false);
+    });
 
     async function suscribirseAlSocket() {
       try {
@@ -79,6 +85,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (!activo) return;
+      onSocketConnect(() => {
+        sincronizar();
+      });
       onOrderCreated((orden) => {
         if (activo) setOrders((prev) => agregarOActualizar(prev, orden));
       });
@@ -91,8 +100,16 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     }
     suscribirseAlSocket();
 
+    const appStateSub = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') {
+        connectSocket().catch(() => {});
+        sincronizar();
+      }
+    });
+
     return () => {
       activo = false;
+      appStateSub.remove();
       disconnectSocket();
     };
   }, [user]);
