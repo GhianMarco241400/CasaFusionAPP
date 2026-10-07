@@ -5,6 +5,13 @@ Aplicación móvil desarrollada para **Punto Fusión**, orientada a centralizar 
 CasaFusion organiza el trabajo mediante accesos diferenciados por rol, permitiendo que cada usuario visualice únicamente las funciones necesarias para sus tareas.
 
 ---
+## 📲 Descargar APK
+
+Puedes descargar la versión Android de CasaFusion desde el siguiente enlace:
+
+[⬇️ Descargar CasaFusion APK](https://expo.dev/artifacts/eas/TLewz3l0gvPMAPXA1uNT0Z0-S1tpRAiOzMQzedIhfOw.apk)
+
+> APK generado mediante Expo EAS Build.
 
 ## 📱 Funcionalidades principales
 
