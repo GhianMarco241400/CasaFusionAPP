@@ -1,7 +1,7 @@
 ## ⚠️ Aviso importante sobre el servidor
 
 > [!IMPORTANT]
-> **El servidor está alojado en Vercel (plan gratuito)**, por lo que **se duerme automáticamente tras 15 minutos de inactividad**.
+> **El servidor está alojado en Render (plan gratuito)**, por lo que **se duerme automáticamente tras 15 minutos de inactividad**.
 >
 > Para evitarlo, configuré un **cronjob que lo mantiene despierto únicamente en el horario de atención del restaurante: de 9:00 a. m. a 6:00 p. m.**
 >
