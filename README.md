@@ -1,3 +1,16 @@
+## ⚠️ Aviso importante sobre el servidor
+
+> [!IMPORTANT]
+> **El servidor está alojado en Vercel (plan gratuito)**, por lo que **se duerme automáticamente tras 15 minutos de inactividad**.
+>
+> Para evitarlo, configuré un **cronjob que lo mantiene despierto únicamente en el horario de atención del restaurante: de 9:00 a. m. a 6:00 p. m.**
+>
+> 🕘 **Dentro de ese horario:** el sistema responde con normalidad.
+>
+> 🌙 **Fuera de ese horario:** el servidor estará dormido, así que **debes esperar aproximadamente 50 segundos** para que responda la primera vez. Es normal: no cierres la página ni recargues, solo espera.
+
+
+
 # 🍽️ CasaFusionAPP
 
 Aplicación móvil desarrollada para **Punto Fusión**, orientada a centralizar la gestión de pedidos, comandas, delivery, cobros, fiados y reportes de ventas en un solo sistema.
