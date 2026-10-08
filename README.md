@@ -12,6 +12,18 @@ Puedes descargar la versión Android de CasaFusion desde el siguiente enlace:
 [⬇️ Descargar CasaFusion APK](https://expo.dev/artifacts/eas/TLewz3l0gvPMAPXA1uNT0Z0-S1tpRAiOzMQzedIhfOw.apk)
 
 > APK generado mediante Expo EAS Build.
+> 
+## 👥 Usuarios de prueba 
+
+Credenciales para probar el sistema según cada rol:
+
+| N.º | Correo | Contraseña | Rol |
+|-----|--------|------------|-----|
+| 1 | leslie@casafusion.com | Leslye0001 | Delivery |
+| 2 | alexandra@casafusion.com | alexandra0002 | Mesero |
+| 3 | aurelia@casafusion.com | aurelia0003 | Cocina |
+| 4 | ivan@casafusion.com | ivan0004 | Cocina |
+| 5 | administrador@casafusion.com | Admin2027punto | Administrador |
 
 ## 📱 Funcionalidades principales
 
