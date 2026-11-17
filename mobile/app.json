@@ -29,8 +29,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/casaFusion.png",
-          "imageWidth": 300,
+          "image": "./assets/casaFusion_splash.png",
+          "imageWidth": 240,
           "resizeMode": "contain",
           "backgroundColor": "#0A0C07"
         }
