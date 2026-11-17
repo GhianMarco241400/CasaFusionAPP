@@ -19,6 +19,7 @@ import { UpdateOrderItemsDto } from './dto/update-order-items.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpdateUrgenteDto } from './dto/update-urgente.dto';
 import { JwtAuthGuard, JwtUser } from '../auth/guards/jwt-auth.guard';
+import { PushService } from '../push/push.service';
 
 function verificarRol(user: JwtUser, rolesPermitidos: string[]) {
   if (!rolesPermitidos.includes(user.role)) {
@@ -32,6 +33,7 @@ export class OrdersController {
   constructor(
     private ordersService: OrdersService,
     private ordersGateway: OrdersGateway,
+    private pushService: PushService,
   ) {}
 
   @Post()
@@ -39,6 +41,7 @@ export class OrdersController {
     verificarRol(req.user, ['mesero', 'delivery', 'admin']);
     const orden = await this.ordersService.create(req.user.userId, dto);
     this.ordersGateway.emitOrderCreated(orden);
+    void this.pushService.enviarComandaNueva(orden);
     return orden;
   }
 
@@ -59,18 +62,23 @@ export class OrdersController {
     @Body() dto: UpdateOrderItemsDto,
   ) {
     verificarRol(req.user, ['mesero', 'delivery', 'admin']);
-    const owner =
-      req.user.role === 'delivery' ? req.user.userId : undefined;
-    const orden = await this.ordersService.updateItems(id, dto.items, owner);
+    const owner = req.user.role === 'delivery' ? req.user.userId : undefined;
+    const { orden, itemsCambiaron } = await this.ordersService.updateItems(
+      id,
+      dto.items,
+      owner,
+    );
     this.ordersGateway.emitOrderUpdated(orden);
+    if (itemsCambiaron) {
+      void this.pushService.enviarComandaEditada(orden);
+    }
     return orden;
   }
 
   @Delete(':id')
   async remove(@Request() req: { user: JwtUser }, @Param('id') id: string) {
     verificarRol(req.user, ['mesero', 'delivery', 'admin', 'cocina']);
-    const owner =
-      req.user.role === 'delivery' ? req.user.userId : undefined;
+    const owner = req.user.role === 'delivery' ? req.user.userId : undefined;
     const res = await this.ordersService.remove(id, owner);
     this.ordersGateway.emitOrderDeleted(id);
     return res;

@@ -7,3 +7,4 @@ coverage/
 *.log
 session-*.md
 mobile/builds/
+*-firebase-adminsdk-*.json

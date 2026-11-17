@@ -12,7 +12,8 @@
     },
     "android": {
       "package": "com.casafusion.pos",
-      "versionCode": 7,
+      "versionCode": 8,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0A0C07",
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -44,7 +45,28 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#D4432B",
+          "defaultChannel": "comandas_nuevas",
+          "sounds": [
+            "./assets/sounds/comanda_nueva.wav",
+            "./assets/sounds/comanda_editada.wav"
+          ]
+        }
+      ],
+      "expo-asset"
     ],
     "extra": {
       "router": {},

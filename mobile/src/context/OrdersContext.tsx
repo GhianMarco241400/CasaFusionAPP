@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { Order, OrderItem, DailyReport, PagoEstado, MetodoPago } from '../types';
 import {
@@ -25,6 +25,7 @@ import {
 } from '../services/socket';
 import { reportarError } from '../services/reports';
 import { useAuth } from './AuthContext';
+import { useSonidosComanda } from '../hooks/useSonidosComanda';
 
 type OrdersContextType = {
   orders: Order[];
@@ -52,13 +53,44 @@ function agregarOActualizar(prev: Order[], orden: Order): Order[] {
   return prev.map((o) => (o.id === orden.id ? orden : o));
 }
 
+function firmaItems(items: OrderItem[]): string {
+  return JSON.stringify(
+    items.map((item) => ({
+      dishId: item.dishId ?? null,
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      entrada: item.entrada ?? null,
+      entradaPersonalizada: item.entradaPersonalizada ?? null,
+      paraLlevar: item.paraLlevar ?? false,
+      taperoPrecio: item.taperoPrecio ?? null,
+      notes: item.notes ?? null,
+      esExtra: item.esExtra ?? false,
+    })),
+  );
+}
+
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const ordersRef = useRef<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const { reproducirNueva, reproducirEditada } = useSonidosComanda(
+    user?.role === 'cocina',
+  );
+  const sonidosRef = useRef({ reproducirNueva, reproducirEditada });
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
+  useEffect(() => {
+    sonidosRef.current = { reproducirNueva, reproducirEditada };
+  }, [reproducirNueva, reproducirEditada]);
 
   useEffect(() => {
     if (!user) {
+      ordersRef.current = [];
       setOrders([]);
       return;
     }
@@ -68,7 +100,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     function sincronizar() {
       return getActiveOrders()
         .then((data) => {
-          if (activo) setOrders(data);
+          if (activo) {
+            ordersRef.current = data;
+            setOrders(data);
+          }
         })
         .catch(() => {});
     }
@@ -89,13 +124,29 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         sincronizar();
       });
       onOrderCreated((orden) => {
-        if (activo) setOrders((prev) => agregarOActualizar(prev, orden));
+        if (!activo) return;
+        const existia = ordersRef.current.some((o) => o.id === orden.id);
+        const siguiente = agregarOActualizar(ordersRef.current, orden);
+        ordersRef.current = siguiente;
+        setOrders(siguiente);
+        if (!existia) sonidosRef.current.reproducirNueva(orden.id);
       });
       onOrderUpdated((orden) => {
-        if (activo) setOrders((prev) => agregarOActualizar(prev, orden));
+        if (!activo) return;
+        const anterior = ordersRef.current.find((o) => o.id === orden.id);
+        const itemsCambiaron = anterior
+          ? firmaItems(anterior.items) !== firmaItems(orden.items)
+          : false;
+        const siguiente = agregarOActualizar(ordersRef.current, orden);
+        ordersRef.current = siguiente;
+        setOrders(siguiente);
+        if (itemsCambiaron) sonidosRef.current.reproducirEditada(orden.id);
       });
       onOrderDeleted((orderId) => {
-        if (activo) setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        if (!activo) return;
+        const siguiente = ordersRef.current.filter((o) => o.id !== orderId);
+        ordersRef.current = siguiente;
+        setOrders(siguiente);
       });
     }
     suscribirseAlSocket();

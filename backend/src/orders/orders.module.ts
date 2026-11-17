@@ -7,10 +7,12 @@ import { Order, OrderSchema } from './schemas/order.schema';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { OrdersGateway } from './orders.gateway';
+import { PushModule } from '../push/push.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
+    PushModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

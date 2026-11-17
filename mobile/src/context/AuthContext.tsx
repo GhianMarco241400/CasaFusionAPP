@@ -2,6 +2,11 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { api, getTokenAsync } from '../services/api';
+import {
+  desregistrarPushTokenAsync,
+  observarCambiosDeToken,
+  registrarPushTokenAsync,
+} from '../services/notifications';
 import type { User } from '../types';
 
 type AuthContextType = {
@@ -40,6 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restaurarSesion();
   }, []);
 
+  useEffect(() => {
+    observarCambiosDeToken(user?.role ?? null);
+    if (!user) return;
+    void registrarPushTokenAsync(user.role);
+  }, [user]);
+
   async function login(email: string, password: string): Promise<User | null> {
     try {
       const response = await api.post<{ access_token: string; user: User }>('/auth/login', {
@@ -75,7 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function logout() {
     setUser(null);
-    SecureStore.deleteItemAsync('token');
+    void (async () => {
+      await desregistrarPushTokenAsync();
+      await SecureStore.deleteItemAsync('token');
+    })();
   }
 
   return (
