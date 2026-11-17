@@ -20,17 +20,18 @@ CasaFusion organiza el trabajo mediante accesos diferenciados por rol, permitien
 ---
 ## 📲 Descargar APK
 
-Puedes descargar la versión Android de CasaFusion desde el siguiente enlace:
+Puedes descargar la versión Android de CasaFusion en "Releases"
 
-[⬇️ Descargar CasaFusion APK](https://expo.dev/artifacts/eas/TLewz3l0gvPMAPXA1uNT0Z0-S1tpRAiOzMQzedIhfOw.apk)
-
-> APK generado mediante Expo EAS Build.
 > 
-## 👥 Usuarios de prueba 
+## 👥 Usuarios del sistema
 
-Credenciales para probar el sistema según cada rol:
-
-|credenciales quitados
+| # | Usuario | Contraseña | Rol |
+|:-:|---------|------------|-----|
+| 1 | leslie@casafusion.com | `Leslye0001` | 🛵 Delivery |
+| 2 | alexandra@casafusion.com | `alexandra0002` | 🍽️ Mesero |
+| 3 | aurelia@casafusion.com | `aurelia0003` | 👩‍🍳 Cocina |
+| 4 | ivan@casafusion.com | `ivan0004` | 👨‍🍳 Cocina |
+| 5 | administrador.com | `Admin2027punto` | 🔑 Administrador |
 
 ## 📱 Funcionalidades principales
 
