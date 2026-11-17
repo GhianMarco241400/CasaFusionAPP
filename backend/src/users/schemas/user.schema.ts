@@ -23,9 +23,6 @@ export class User {
 
   @Prop({ type: Buffer, default: null })
   avatar?: Buffer | null;
-
-  @Prop({ type: [String], default: [] })
-  pushTokens: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

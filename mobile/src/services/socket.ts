@@ -47,10 +47,6 @@ export function disconnectSocket() {
   socket = null;
 }
 
-export function socketConectado(): boolean {
-  return socket?.connected ?? false;
-}
-
 export function onOrderCreated(callback: (order: Order) => void): void {
   socket?.on('order:created', (data: unknown) => {
     callback(mapOrderFromBackend(data as Parameters<typeof mapOrderFromBackend>[0]));

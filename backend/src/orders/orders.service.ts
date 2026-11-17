@@ -7,19 +7,12 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  Order,
-  OrderDocument,
-  OrderItem,
-  OrderStatus,
-} from './schemas/order.schema';
+import { Order, OrderDocument, OrderItem, OrderStatus } from './schemas/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(
-    @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-  ) {}
+  constructor(@InjectModel(Order.name) private orderModel: Model<OrderDocument>) {}
 
   private itemTotal(item: OrderItem): number {
     return (
@@ -31,10 +24,7 @@ export class OrdersService {
   }
 
   async create(waiterId: string, dto: CreateOrderDto): Promise<OrderDocument> {
-    const total = dto.items.reduce(
-      (acc, item) => acc + this.itemTotal(item),
-      0,
-    );
+    const total = dto.items.reduce((acc, item) => acc + this.itemTotal(item), 0);
 
     const nuevaOrden = await this.orderModel.create({
       tableNumber: dto.tableNumber,
@@ -70,7 +60,7 @@ export class OrdersService {
     id: string,
     items: OrderItem[],
     ownerUserId?: string,
-  ): Promise<{ orden: OrderDocument; itemsCambiaron: boolean }> {
+  ): Promise<OrderDocument> {
     const orden = await this.orderModel.findById(id).exec();
 
     if (!orden) {
@@ -85,13 +75,6 @@ export class OrdersService {
       throw new ConflictException('La comanda ya está en preparación');
     }
 
-    const itemsCambiaron =
-      this.firmaItems(orden.items) !== this.firmaItems(items);
-
-    if (!itemsCambiaron) {
-      return { orden, itemsCambiaron };
-    }
-
     const total = items.reduce((acc, item) => acc + this.itemTotal(item), 0);
 
     orden.items = items;
@@ -99,30 +82,10 @@ export class OrdersService {
     orden.edited = true;
     await orden.save();
 
-    return { orden, itemsCambiaron };
+    return orden;
   }
 
-  private firmaItems(items: OrderItem[]): string {
-    return JSON.stringify(
-      items.map((item) => ({
-        dishId: item.dishId ?? null,
-        name: item.name,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        entrada: item.entrada ?? null,
-        entradaPersonalizada: item.entradaPersonalizada ?? null,
-        paraLlevar: item.paraLlevar ?? false,
-        taperoPrecio: item.taperoPrecio ?? null,
-        notes: item.notes ?? null,
-        esExtra: item.esExtra ?? false,
-      })),
-    );
-  }
-
-  async remove(
-    id: string,
-    ownerUserId?: string,
-  ): Promise<{ deleted: boolean }> {
+  async remove(id: string, ownerUserId?: string): Promise<{ deleted: boolean }> {
     const orden = await this.orderModel.findById(id).exec();
 
     if (!orden) {
@@ -142,11 +105,7 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, status: OrderStatus): Promise<OrderDocument> {
-    const actualizacion: {
-      status: OrderStatus;
-      edited: boolean;
-      urgente?: boolean;
-    } = {
+    const actualizacion: { status: OrderStatus; edited: boolean; urgente?: boolean } = {
       status,
       edited: false,
     };
@@ -155,9 +114,11 @@ export class OrdersService {
       actualizacion.urgente = false;
     }
 
-    const orden = await this.orderModel.findByIdAndUpdate(id, actualizacion, {
-      returnDocument: 'after',
-    });
+    const orden = await this.orderModel.findByIdAndUpdate(
+      id,
+      actualizacion,
+      { returnDocument: 'after' }
+    );
 
     if (!orden) {
       throw new NotFoundException('Orden no encontrada');
@@ -170,7 +131,7 @@ export class OrdersService {
     const orden = await this.orderModel.findByIdAndUpdate(
       id,
       { urgente },
-      { returnDocument: 'after' },
+      { returnDocument: 'after' }
     );
 
     if (!orden) {

@@ -9,7 +9,6 @@ import { AuthModule } from './auth/auth.module';
 import { MenuModule } from './menu/menu.module';
 import { OrdersModule } from './orders/orders.module';
 import { ReportsModule } from './reports/reports.module';
-import { PushModule } from './push/push.module';
 
 @Module({
   imports: [
@@ -25,7 +24,6 @@ import { PushModule } from './push/push.module';
     MenuModule,
     OrdersModule,
     ReportsModule,
-    PushModule,
   ],
   controllers: [AppController],
   providers: [AppService],

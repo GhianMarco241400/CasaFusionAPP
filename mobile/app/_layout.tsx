@@ -1,47 +1,16 @@
 // app/_layout.tsx
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { View, ActivityIndicator, Platform } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import * as Notifications from 'expo-notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { OrdersProvider } from '../src/context/OrdersContext';
 import { TemaProvider, useTema } from '../src/context/TemaContext';
-import { configurarNotificaciones } from '../src/services/notifications';
 import '../global.css';
 
-configurarNotificaciones();
-
 const queryClient = new QueryClient();
-
-function useNotificationObserver() {
-  const router = useRouter();
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-
-    function redirigir(notification: Notifications.Notification) {
-      const url = notification.request.content.data?.url;
-      if (typeof url === 'string') {
-        router.push(url);
-      }
-    }
-
-    const response = Notifications.getLastNotificationResponse();
-    if (response?.notification) {
-      redirigir(response.notification);
-    }
-
-    const subscription =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        redirigir(response.notification);
-      });
-
-    return () => subscription.remove();
-  }, [router]);
-}
 
 function GuardiaDeSesion() {
   const { user, isRestoring } = useAuth();
@@ -88,8 +57,6 @@ function GuardiaDeSesion() {
 }
 
 export default function RootLayout() {
-  useNotificationObserver();
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <TemaProvider>

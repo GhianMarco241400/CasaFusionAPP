@@ -48,41 +48,6 @@ export class UsersService {
       .exec();
   }
 
-  async addPushToken(id: string, token: string): Promise<void> {
-    await this.removePushTokenByToken(token);
-    await this.userModel
-      .updateOne(
-        { _id: id, active: { $ne: false } },
-        { $addToSet: { pushTokens: token } },
-      )
-      .exec();
-  }
-
-  async removePushToken(id: string, token: string): Promise<void> {
-    await this.userModel
-      .updateOne({ _id: id }, { $pull: { pushTokens: token } })
-      .exec();
-  }
-
-  async removePushTokenByToken(token: string): Promise<void> {
-    await this.userModel
-      .updateMany({ pushTokens: token }, { $pull: { pushTokens: token } })
-      .exec();
-  }
-
-  async findPushTokensByRole(role: string): Promise<string[]> {
-    const users = await this.userModel
-      .find({
-        role,
-        active: { $ne: false },
-        pushTokens: { $exists: true, $ne: [] },
-      })
-      .select('pushTokens')
-      .exec();
-
-    return users.flatMap((user) => user.pushTokens ?? []);
-  }
-
   toPublicUser(user: UserDocument) {
     return {
       id: user._id,
