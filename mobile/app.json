@@ -12,11 +12,11 @@
     },
     "android": {
       "package": "com.casafusion.pos",
-      "versionCode": 6,
+      "versionCode": 7,
       "adaptiveIcon": {
-        "backgroundColor": "#0A0A06",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#0A0C07",
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/monochrome-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -26,6 +26,15 @@
     "plugins": [
       "expo-secure-store",
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/casaFusion.png",
+          "imageWidth": 300,
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0C07"
+        }
+      ],
       "expo-sharing",
       "@react-native-community/datetimepicker",
       [

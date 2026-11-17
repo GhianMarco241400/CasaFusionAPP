@@ -1,7 +1,7 @@
 // src/components/AjustesLetras.tsx
 import { Modal, Pressable, Text, View, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, SlideInRight } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, SlideInRight } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useLetrasCocina, FuenteLetras } from '../context/LetrasCocina';
 import { useTema } from '../context/TemaContext';
@@ -84,7 +84,7 @@ export function AjustesLetras({ onClose }: { onClose: () => void }) {
         <Pressable className="flex-1" style={{ backgroundColor: alpha(tema.overlay, 60) }} onPress={onClose} />
 
         <Animated.View
-          entering={SlideInRight.springify().damping(17).stiffness(180)}
+          entering={SlideInRight.duration(220).easing(Easing.out(Easing.cubic))}
           className="absolute right-0 top-14 w-[88%] rounded-l-3xl overflow-hidden border"
           style={{
             bottom: insets.bottom + 16,

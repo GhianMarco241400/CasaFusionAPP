@@ -26,6 +26,7 @@ import { getDishes, getEntradas, getCategories } from '../../../../src/services/
 import { Dish, OrderItem } from '../../../../src/types';
 import { EntradaModal, EntradaConfirmResult } from '../../../../src/components/EntradaModal';
 import { PlatoModal } from '../../../../src/components/PlatoModal';
+import { EspecialesModal } from '../../../../src/components/EspecialesModal';
 import { ScalePressable } from '../../../../src/components/ScalePressable';
 import { Texto as Text, TextoInput as TextInput } from '../../../../src/components/Texto';
 import { useAuth } from '../../../../src/context/AuthContext';
@@ -277,7 +278,7 @@ export default function MesaScreen() {
 
   const tilePersonalizado = (
     <Animated.View entering={FadeInDown.duration(220)}>
-      <ScalePressable onPress={abrirPlatoNuevo} pressedScale={0.95}>
+      <Pressable onPress={abrirPlatoNuevo}>
         <View
           className={`w-36 rounded-2xl px-4 py-3 border-2 min-h-[104px] ${
             enComandaCustom ? '' : 'border-dashed'
@@ -315,7 +316,7 @@ export default function MesaScreen() {
             </View>
           </View>
         </View>
-      </ScalePressable>
+      </Pressable>
     </Animated.View>
   );
 
@@ -439,7 +440,7 @@ export default function MesaScreen() {
             const conBadge = yaEnComanda && cantidad > 1;
             return (
               <Animated.View entering={FadeInDown.duration(160)}>
-                <ScalePressable onPress={() => handleSelectPlato(item)} pressedScale={0.95}>
+                <Pressable onPress={() => handleSelectPlato(item)}>
                   <Animated.View
                     layout={LinearTransition.duration(120)}
                     className="w-36 rounded-2xl px-4 py-3 border-2 min-h-[104px]"
@@ -495,7 +496,7 @@ export default function MesaScreen() {
                       </Animated.View>
                     </View>
                   </Animated.View>
-                </ScalePressable>
+                </Pressable>
               </Animated.View>
             );
           }}
@@ -506,7 +507,7 @@ export default function MesaScreen() {
         <ScalePressable
           onPress={() => {
             hapticImpact();
-            setEspecialesAbierto((v) => !v);
+            setEspecialesAbierto(true);
           }}
           pressedScale={0.97}
           className="mt-2 mb-0"
@@ -529,96 +530,11 @@ export default function MesaScreen() {
             </View>
             <View className="rounded-full px-3 py-1 flex-row items-center gap-1.5" style={{ backgroundColor: alpha(t.pillText, 15) }}>
               <Text className="text-xs font-bold" style={{ color: t.pillText }}>
-                {cantEspeciales > 0
-                  ? `${cantEspeciales} en comanda`
-                  : especialesAbierto
-                    ? 'Ocultar'
-                    : 'Ver'}
+                {cantEspeciales > 0 ? `${cantEspeciales} en comanda` : 'Ver'}
               </Text>
             </View>
           </View>
         </ScalePressable>
-      )}
-
-      {especialesAbierto && especiales.length > 0 && (
-        <Animated.FlatList
-          entering={FadeInDown.duration(200)}
-          data={especiales}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={{ gap: 10, paddingVertical: 4 }}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const cantidad = comanda.reduce(
-              (acc, c) => acc + (c.dishId === item.id ? c.quantity : 0),
-              0
-            );
-            const yaEnComanda = cantidad > 0;
-            const conBadge = yaEnComanda && cantidad > 1;
-            return (
-              <Animated.View entering={FadeInDown.duration(160)}>
-                <ScalePressable onPress={() => handleSelectPlato(item)} pressedScale={0.95}>
-                  <Animated.View
-                    layout={LinearTransition.duration(120)}
-                    className="w-36 rounded-2xl px-4 py-3 border-2 min-h-[104px]"
-                    style={
-                      yaEnComanda
-                        ? { backgroundColor: t.primary, borderColor: t.primary }
-                        : { backgroundColor: '#FBF1DF', borderColor: temaId === 'claro' ? '#1E1A17' : alpha(t.accent, 60) }
-                    }
-                  >
-                    <Text
-                      className="font-bold"
-                      style={{ color: yaEnComanda ? t.onPrimary : t.pillText }}
-                      numberOfLines={2}
-                    >
-                      {item.name}
-                    </Text>
-                    <View
-                      className="flex-row items-center justify-between mt-2.5 rounded-full py-1 px-2.5"
-                      style={{
-                        backgroundColor: yaEnComanda
-                          ? alpha(t.onPrimary, 20)
-                          : alpha(t.accent, 20),
-                      }}
-                    >
-                      <Text
-                        className="text-sm font-semibold"
-                        style={{ color: yaEnComanda ? t.onPrimary : t.pillText }}
-                      >
-                        S/ {item.price}
-                      </Text>
-                      <Animated.View entering={ZoomIn.duration(150)}>
-                        <View
-                          className="w-6 h-6 rounded-full items-center justify-center"
-                          style={{
-                            backgroundColor: yaEnComanda ? t.onPrimary : t.accent,
-                          }}
-                        >
-                          {yaEnComanda ? (
-                            conBadge ? (
-                              <Text
-                                className="text-center font-extrabold text-xs leading-tight"
-                                style={{ color: t.primary }}
-                              >
-                                ×{cantidad}
-                              </Text>
-                            ) : (
-                              <Check size={14} color={t.primary} strokeWidth={3} />
-                            )
-                          ) : (
-                            <Plus size={14} color={t.pillText} strokeWidth={3} />
-                          )}
-                        </View>
-                      </Animated.View>
-                    </View>
-                  </Animated.View>
-                </ScalePressable>
-              </Animated.View>
-            );
-          }}
-        />
       )}
 
       {extras.length > 0 && (
@@ -962,7 +878,10 @@ export default function MesaScreen() {
               )}
               <Text
                 className="text-center font-bold text-base"
-                style={{ color: temaId === 'claro' && comanda.length === 0 ? t.pillText : t.onPrimary }}
+                style={{
+                  color: temaId === 'claro' && comanda.length === 0 ? t.pillText : t.onPrimary,
+                  fontFamily: 'serif',
+                }}
               >
                 {enviando ? (edit ? 'Comanda actualizada' : 'Enviado a cocina') : edit ? 'Guardar cambios' : 'Enviar a cocina'}
               </Text>
@@ -1062,9 +981,8 @@ export default function MesaScreen() {
                   contentContainerStyle={{ paddingBottom: 16 }}
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => (
-                    <ScalePressable
+                    <Pressable
                       onPress={() => handleAgregarExtra(item)}
-                      pressedScale={0.95}
                       className="flex-1 mb-3"
                     >
                       <View
@@ -1095,7 +1013,7 @@ export default function MesaScreen() {
                           </View>
                         </View>
                       </View>
-                    </ScalePressable>
+                    </Pressable>
                   )}
                 />
               )}
@@ -1103,6 +1021,14 @@ export default function MesaScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <EspecialesModal
+        visible={especialesAbierto}
+        onClose={() => setEspecialesAbierto(false)}
+        especiales={especiales}
+        comanda={comanda}
+        onSelect={handleSelectPlato}
+      />
 
       <PlatoModal
         visible={platoModalVisible}

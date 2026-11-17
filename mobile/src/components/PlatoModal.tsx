@@ -1,7 +1,7 @@
 // src/components/PlatoModal.tsx
 import { useEffect, useState } from 'react';
 import { View, Text, Modal, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { ScalePressable } from './ScalePressable';
 import { useTema } from '../context/TemaContext';
@@ -108,7 +108,7 @@ export function PlatoModal({
           </Pressable>
 
           <Animated.View
-            entering={FadeInDown.springify().damping(17).stiffness(190)}
+            entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic))}
             className="border-t-2 rounded-t-3xl px-6 pt-6 pb-8"
             style={{ backgroundColor: t.surfaceElevated, borderTopColor: t.border }}
           >

@@ -45,15 +45,20 @@ export function PanelTemas({ onClose }: { onClose: () => void }) {
             bottom: insets.bottom + 16,
             zIndex: 60,
             elevation: 60,
-            backgroundColor: t.surfaceElevated,
-            borderColor: t.border,
-            borderWidth: 1,
             shadowColor: '#000',
             shadowOpacity: 0.5,
             shadowRadius: 18,
             shadowOffset: { width: 0, height: 8 },
           }}
         >
+          <View
+            className="absolute inset-0"
+            style={{
+              backgroundColor: t.surfaceElevated,
+              borderColor: t.border,
+              borderWidth: 1,
+            }}
+          />
           <Animated.View entering={FadeIn.duration(200)} style={{ flex: 1 }}>
             <View className="px-4 pt-4 pb-3 flex-row items-center justify-between">
               <View className="flex-row items-center gap-3 flex-1 pr-2">

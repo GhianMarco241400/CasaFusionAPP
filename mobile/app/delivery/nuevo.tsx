@@ -29,6 +29,7 @@ import { getDishes, getEntradas, getCategories } from '../../src/services/menu';
 import { Dish, OrderItem } from '../../src/types';
 import { EntradaModal, EntradaConfirmResult } from '../../src/components/EntradaModal';
 import { PlatoModal } from '../../src/components/PlatoModal';
+import { EspecialesModal } from '../../src/components/EspecialesModal';
 import { ScalePressable } from '../../src/components/ScalePressable';
 import { useAuth } from '../../src/context/AuthContext';
 import { useOrders } from '../../src/context/OrdersContext';
@@ -284,7 +285,7 @@ export default function DeliveryNuevoScreen() {
 
   const tilePersonalizado = (
     <Animated.View entering={FadeInDown.duration(220)}>
-      <ScalePressable onPress={abrirPlatoNuevo} pressedScale={0.95}>
+      <Pressable onPress={abrirPlatoNuevo}>
         <View
           className={`w-36 rounded-xl px-4 py-3 border-2 min-h-[104px] ${
             enComandaCustom ? '' : 'border-dashed'
@@ -323,7 +324,7 @@ export default function DeliveryNuevoScreen() {
             </View>
           </View>
         </View>
-      </ScalePressable>
+      </Pressable>
     </Animated.View>
   );
 
@@ -490,9 +491,9 @@ export default function DeliveryNuevoScreen() {
             const yaEnComanda = comanda.some((c) => c.dishId === item.id);
             return (
               <Animated.View entering={FadeInDown.delay(70 + index * 55).duration(220)}>
-                <ScalePressable onPress={() => handleSelectPlato(item)} pressedScale={0.95}>
+                <Pressable onPress={() => handleSelectPlato(item)}>
                   <Animated.View
-                    layout={LinearTransition.springify().damping(18)}
+                    layout={LinearTransition.duration(120)}
                     className="w-36 rounded-xl px-4 py-3 border-2 min-h-[104px]"
                     style={
                       yaEnComanda
@@ -535,7 +536,7 @@ export default function DeliveryNuevoScreen() {
                       </Animated.View>
                     </View>
                   </Animated.View>
-                </ScalePressable>
+                </Pressable>
               </Animated.View>
             );
           }}
@@ -643,14 +644,14 @@ export default function DeliveryNuevoScreen() {
             contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
             keyExtractor={(_, i) => i.toString()}
             keyboardShouldPersistTaps="handled"
-            layout={LinearTransition.springify().damping(18)}
+            layout={LinearTransition.duration(120)}
             renderItem={({ item, index }) => {
               const esCustom = !item.dishId;
               return (
                 <Animated.View
                   entering={FadeInDown.duration(220)}
                   exiting={FadeOut.duration(150)}
-                  layout={LinearTransition.springify().damping(18)}
+                  layout={LinearTransition.duration(120)}
                   className="rounded-xl overflow-hidden"
                 >
                   <ReanimatedSwipeable
@@ -1013,9 +1014,8 @@ export default function DeliveryNuevoScreen() {
                   contentContainerStyle={{ paddingBottom: 16 }}
                   keyExtractor={(item) => item.id}
                   renderItem={({ item }) => (
-                    <ScalePressable
+                    <Pressable
                       onPress={() => handleAgregarExtra(item)}
-                      pressedScale={0.95}
                       className="flex-1 mb-3"
                     >
                       <View
@@ -1046,7 +1046,7 @@ export default function DeliveryNuevoScreen() {
                           </View>
                         </View>
                       </View>
-                    </ScalePressable>
+                    </Pressable>
                   )}
                 />
               )}
@@ -1055,120 +1055,13 @@ export default function DeliveryNuevoScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal
+      <EspecialesModal
         visible={especialesAbierto}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setEspecialesAbierto(false)}
-      >
-        <View className="flex-1 justify-end">
-          <Pressable
-            className="absolute inset-0 bg-black/50"
-            onPress={() => setEspecialesAbierto(false)}
-          />
-          <View
-            className={`rounded-t-3xl h-[55%] pt-5 px-5 ${
-              temaId === 'claro' ? 'border-t-2 border-[#1E1A17]' : 'border-t'
-            }`}
-            style={{
-              backgroundColor: t.surfaceElevated,
-              borderTopColor: temaId === 'claro' ? '#1E1A17' : t.border,
-              paddingBottom: insets.bottom + 16,
-            }}
-          >
-            <View className="flex-row items-center justify-between mb-4">
-              <View className="flex-row items-center gap-2.5">
-                <View
-                  className="w-8 h-8 rounded-full items-center justify-center"
-                  style={{ backgroundColor: alpha(t.pillText, 15) }}
-                >
-                  <Star size={17} color={t.pillText} strokeWidth={2.5} fill={t.pillText} />
-                </View>
-                <Text className="font-extrabold text-lg" style={{ color: t.textPrimary }}>Especiales</Text>
-                <Text className="text-xs" style={{ color: t.textSecondary }}>{especiales.length} disponibles</Text>
-              </View>
-              <ScalePressable onPress={() => setEspecialesAbierto(false)} pressedScale={0.9} hitSlop={8}>
-                <View
-                  className={`w-9 h-9 rounded-full items-center justify-center ${
-                    temaId === 'claro' ? 'border-2 border-[#1E1A17]' : ''
-                  }`}
-                  style={{ backgroundColor: t.surface }}
-                >
-                  <X size={16} color={t.textSecondary} />
-                </View>
-              </ScalePressable>
-            </View>
-
-            <Animated.FlatList
-              data={especiales}
-              numColumns={2}
-              columnWrapperStyle={{ gap: 10 }}
-              contentContainerStyle={{ paddingBottom: 16 }}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                const yaEnComanda = comanda.some((c) => c.dishId === item.id);
-                return (
-                  <ScalePressable
-                    onPress={() => {
-                      setEspecialesAbierto(false);
-                      handleSelectPlato(item);
-                    }}
-                    pressedScale={0.95}
-                    className="flex-1 mb-3"
-                  >
-                    <View
-                      className={`rounded-2xl overflow-hidden ${
-                        temaId === 'claro' ? 'border-2 border-[#1E1A17]' : 'border'
-                      }`}
-                      style={{
-                        backgroundColor: yaEnComanda ? t.primary : alpha(t.accent, 8),
-                        borderColor: yaEnComanda ? t.primary : temaId === 'claro' ? '#1E1A17' : alpha(t.accent, 45),
-                      }}
-                    >
-                      {item.image !== '' && (
-                        <Image
-                          source={{ uri: item.image }}
-                          className="w-full h-24"
-                          style={{ backgroundColor: t.background }}
-                          resizeMode="cover"
-                        />
-                      )}
-                      <View className="px-3 py-2.5">
-                        <Text
-                          className="font-semibold text-sm"
-                          style={{ color: yaEnComanda ? t.onPrimary : t.textPrimary }}
-                          numberOfLines={2}
-                        >
-                          {item.name}
-                        </Text>
-                        <View className="flex-row items-center justify-between mt-1.5">
-                          <Text
-                            className="text-xs font-semibold"
-                            style={{ color: yaEnComanda ? alpha(t.onPrimary, 85) : t.textSecondary }}
-                          >
-                            S/ {item.price.toFixed(2)}
-                          </Text>
-                          <View
-                            className="w-6 h-6 rounded-full items-center justify-center"
-                            style={{ backgroundColor: yaEnComanda ? t.onPrimary : t.accent }}
-                          >
-                            <Text
-                              className="text-center font-extrabold text-sm leading-none"
-                              style={{ color: yaEnComanda ? t.primary : t.onPrimary }}
-                            >
-                              {yaEnComanda ? '✓' : '+'}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </ScalePressable>
-                );
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setEspecialesAbierto(false)}
+        especiales={especiales}
+        comanda={comanda}
+        onSelect={handleSelectPlato}
+      />
     </KeyboardAvoidingView>
   );
 }

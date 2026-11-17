@@ -12,7 +12,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -135,7 +135,7 @@ function AvisoBell() {
             />
           </Pressable>
           <Animated.View
-            entering={FadeInDown.springify().damping(17).stiffness(180)}
+            entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic))}
             className="absolute top-20 right-5 w-[88%] max-w-sm max-h-[70%] rounded-2xl overflow-hidden"
             style={{
               backgroundColor: t.surfaceElevated,
@@ -450,13 +450,11 @@ export function HeaderActions() {
             <Feather name="bell" size={16} color={t.accent} strokeWidth={2} />
           </View>
         )}
-        <ScalePressable
+        <Pressable
           onPress={handleOpenMenu}
           disabled={avatarCargando}
-          pressedScale={0.9}
           hitSlop={8}
-          innerClassName="flex-1 w-full h-full items-center justify-center"
-          className="w-14 h-14 rounded-full overflow-hidden"
+          className="w-14 h-14 rounded-full overflow-hidden items-center justify-center"
           style={{
             backgroundColor: t.pillBg,
             shadowColor: '#000',
@@ -477,7 +475,7 @@ export function HeaderActions() {
           ) : (
             <Feather name="user" size={24} color={t.pillText} />
           )}
-        </ScalePressable>
+        </Pressable>
       </View>
 
       <Modal
@@ -494,7 +492,7 @@ export function HeaderActions() {
           />
 
           <Animated.View
-            entering={FadeInDown.springify().damping(17).stiffness(180)}
+            entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic))}
             className="absolute top-20 right-5 w-64 rounded-2xl overflow-hidden"
             style={{
               backgroundColor: t.surfaceElevated,
@@ -540,25 +538,37 @@ export function HeaderActions() {
 
             <View className="h-px" style={{ backgroundColor: t.border }} />
 
-            {items.map((item, indice) => (
-              <Animated.View
-                key={item.key}
-                entering={FadeInDown.delay(160 + indice * 55).duration(220)}
-              >
-                <ScalePressable
-                  onPress={item.onPress}
-                  pressedScale={0.97}
-                  className="px-4 py-3.5"
+            {items.map((item, indice) => {
+              const sinRebote = item.key === 'avatar' || item.key === 'letras';
+              const contenido = (
+                <Text className="font-semibold" style={{ color: item.color }}>
+                  {item.label}
+                </Text>
+              );
+              return (
+                <Animated.View
+                  key={item.key}
+                  entering={FadeInDown.delay(160 + indice * 55).duration(220)}
                 >
-                  <Text className="font-semibold" style={{ color: item.color }}>
-                    {item.label}
-                  </Text>
-                </ScalePressable>
-                {indice < items.length - 1 && (
-                  <View className="h-px mx-4" style={{ backgroundColor: t.border }} />
-                )}
-              </Animated.View>
-            ))}
+                  {sinRebote ? (
+                    <Pressable onPress={item.onPress} className="px-4 py-3.5">
+                      {contenido}
+                    </Pressable>
+                  ) : (
+                    <ScalePressable
+                      onPress={item.onPress}
+                      pressedScale={0.97}
+                      className="px-4 py-3.5"
+                    >
+                      {contenido}
+                    </ScalePressable>
+                  )}
+                  {indice < items.length - 1 && (
+                    <View className="h-px mx-4" style={{ backgroundColor: t.border }} />
+                  )}
+                </Animated.View>
+              );
+            })}
           </Animated.View>
         </Pressable>
       </Modal>
@@ -577,7 +587,7 @@ export function HeaderActions() {
             style={{ backgroundColor: alpha(t.overlay, 85) }}
           />
           <Animated.View
-            entering={FadeInDown.springify().damping(17).stiffness(180)}
+            entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic))}
             className="absolute top-20 right-5 w-64 rounded-2xl overflow-hidden"
             style={{
               backgroundColor: t.surfaceElevated,
@@ -665,7 +675,7 @@ export function HeaderActions() {
             <View className="flex-1" style={{ backgroundColor: alpha(t.overlay, 85) }} />
           </Pressable>
           <Animated.View
-            entering={FadeInDown.springify().damping(17).stiffness(180)}
+            entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic))}
             className="absolute rounded-3xl overflow-hidden"
             style={{
               top: 96,

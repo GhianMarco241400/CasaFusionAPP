@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Entrada } from '../types';
 import { useTema } from '../context/TemaContext';
@@ -130,7 +130,7 @@ export function EntradaModal({
           </Pressable>
 
           <Animated.View
-            entering={FadeInDown.springify().damping(17).stiffness(190)}
+            entering={FadeInDown.duration(220).easing(Easing.out(Easing.cubic))}
             className="border-t-2 rounded-t-3xl px-6 pt-6 pb-8"
             style={{ backgroundColor: t.surfaceElevated, borderTopColor: t.border }}
           >
